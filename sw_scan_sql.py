@@ -12,17 +12,16 @@ FIELDS_NAME = ("accession", "description", "frame", "identity",
 from PyQt5.QtWidgets import (QMainWindow, QApplication,
                              QTableWidgetItem,
                              QFileDialog)
-# from PyQt5.QtGui import (QFileDialog)
-
 
 from sw_scan_ui import Ui_MainWindow
 import sys
 import pandas as pd
-import csv
+# import csv
+import sqlite3
 
 class SW_Scan(QMainWindow, Ui_MainWindow):
 
-    def __init__(self, parent=None):
+    def __init__(self, input_file_name: str, parent=None):
         super(SW_Scan, self).__init__(parent)
         self.setupUi(self)
         self.setWindowTitle("SW Scan")
@@ -30,61 +29,68 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.initialize_var()
 
         self.connections()
+        
+        app.processEvents()
+
+        if input_file_name:
+            self.load_file(input_file_name)
 
 
     def initialize_var(self):
         self.file_name = ""
         self.align = None
+        self.connection = None
+
 
     def connections(self):
-
         self.action_load_file.triggered.connect(self.load_file)
-        self.pb_filter.clicked.connect(self.filter2)
+        self.pb_filter.clicked.connect(self.filter)
         self.pb_save_tsv.clicked.connect(self.save_tsv)
         self.pb_save_fbs.clicked.connect(self.save_fbs)
         self.action_quit.triggered.connect(self.close)
 
 
-    def load_file(self):
+    def load_file(self, file_name):
 
-        #self.align = pd.read_table("/data/tmp/orf8_vrl.sorted.sw.1e5")
-        #return
+        if not file_name:
+            self.file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "")
+            if not self.file_name:
+                return
+        else:
+            self.file_name = file_name
 
-        self.file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "")
-        if not self.file_name:
-            return
+        self.statusBar().showMessage("Loading file...")
+        app.processEvents()
 
-        with open(self.file_name, "r") as f:
-            reader = csv.reader(f, delimiter = "\t")
-            row_count = len(list(reader))
+        self.connection = sqlite3.connect(':memory:')
+        cur = self.connection.cursor()
+        cur.execute('create table sequences (accession text, description text, frame text, identity float, score float, align_length int, target_length int, aligned_query_sequence text, aligned_target_sequence text, query_begin int, query_end int, target_begin int, target_end_optimal int)')
+        self.connection.commit()
 
-        #self.align = pd.read_table(self.file_name)
-        self.statusBar().showMessage(f"File {self.file_name} loaded. {row_count} sequences found")
+        df = pd.read_csv(self.file_name, sep='\t')
+        df.to_sql('sequences', self.connection, if_exists='replace', index=False)
+        cur.execute('SELECT count(*) FROM sequences')
+        row = cur.fetchone()
+        row_count = row[0]
 
+        cur = self.connection.cursor()
+        cur.execute("SELECT * FROM sequences ORDER by identity DESC LIMIT 1000")
 
-    def filter(self):
-
-        self.tw.clear()
-
-        results = None
-        if self.le_id.text():
-            results = self.align[self.align.accession.str.contains(self.le_id.text())]
-        if self.le_description.text():
-            if results is not None:
-                results = results[self.align.description.str.contains(self.le_id.text())]
-            else:
-                results = self.align[self.align.description.str.contains(self.le_id.text())]
-
-        self.tw.setRowCount(len(results))
+        self.tw.setRowCount(0)
         self.tw.setColumnCount(len(FIELDS_NAME))
         self.tw.setHorizontalHeaderLabels(FIELDS_NAME)
 
-        for idx in range(len(results)):
-            for i, name in enumerate(FIELDS_NAME):
-                self.tw.setItem(idx, i, QTableWidgetItem(str(results.iloc[int(idx)][name])))
+        for row in cur.fetchall():
+            idx = 0
+            self.tw.setRowCount(self.tw.rowCount() + 1)
+            for r in row:
+                self.tw.setItem(self.tw.rowCount() - 1, idx, QTableWidgetItem(str(r)))
+                idx += 1
+
+        self.statusBar().showMessage(f"File {self.file_name} loaded. {row_count} sequences found ({self.tw.rowCount()} displayed)")
 
 
-    def filter2(self):
+    def filter(self):
 
         def identity(value, relation, data):
             if relation == '=':
@@ -99,31 +105,46 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         app.processEvents()
         if self.file_name == "":
             return
-        infile = open(self.file_name, "r")
-        read = csv.reader(infile, delimiter='\t')
-        headers = next(read)
 
         self.tw.setRowCount(0)
         self.tw.setColumnCount(len(FIELDS_NAME))
         self.tw.setHorizontalHeaderLabels(FIELDS_NAME)
 
         id = self.le_id.text().upper() if self.le_id.text() else ""
-        description = self.le_description.text().upper() if self.le_description.text() else ""
+        description1 = self.le_description.text().upper() if self.le_description.text() else ""
         identity_pc = float(self.le_identity.text()) if self.le_identity.text() else 0
         min_align_length = int(self.le_align_length.text()) if self.le_align_length.text() else 0
 
-        for row in read:
+        sql = "SELECT * FROM sequences WHERE "
 
-            if (id in row[0].upper()) and \
-               (description in row[1].upper()) and \
-               ((identity_pc == 0) or (identity_pc and identity(identity_pc, self.cb_identity_relation.currentText(), row[3]))) and \
-               ((min_align_length == 0) or (min_align_length and int(row[5]) >= min_align_length)):
+        sql2 = ""        
+        if id:
+            sql2 += f" description LIKE '%{id}%' "
 
-                self.tw.setRowCount(self.tw.rowCount() + 1)
-                for i, _ in enumerate(FIELDS_NAME):
-                    self.tw.setItem(self.tw.rowCount() - 1, i, QTableWidgetItem(row[i]))
+        if description1:
+            if sql2: sql2 += " AND "
+            sql2 += f" description LIKE '%{description1}%' "
+
+        if identity_pc:
+            if sql2: sql2 += " AND "
+            sql2 += f" identity {self.cb_identity_relation.currentText()} {identity_pc} "
+
+        if min_align_length:
+            if sql2: sql2 += " AND "
+            sql2 += f" align_length >= {min_align_length} "
+
+        cur = self.connection.cursor()
+        cur.execute(sql + sql2 + " ORDER by identity")
+
+        for row in cur.fetchall():
+            idx = 0
+            self.tw.setRowCount(self.tw.rowCount() + 1)
+            for r in row:
+                self.tw.setItem(self.tw.rowCount() - 1, idx, QTableWidgetItem(str(r)))
+                idx += 1
 
         self.statusBar().showMessage(f"{self.tw.rowCount()} sequences found")
+
 
     def save_tsv(self):
         with open("results.tsv", "w") as f_out:
@@ -198,7 +219,11 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    program = SW_Scan()
+    if len(sys.argv) > 1:
+        file_name = sys.argv[1]
+    else:
+        file_name = ""
+    program = SW_Scan(file_name)
     program.show()
     program.raise_()
     sys.exit(app.exec_())
