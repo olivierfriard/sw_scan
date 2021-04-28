@@ -12,7 +12,6 @@ FIELDS_NAME = ("accession", "description", "frame", "identity",
 from PyQt5.QtWidgets import (QMainWindow, QApplication,
                              QTableWidgetItem,
                              QFileDialog)
-# from PyQt5.QtGui import (QFileDialog)
 
 
 from sw_scan_ui import Ui_MainWindow

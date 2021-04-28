@@ -92,14 +92,6 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
     def filter(self):
 
-        def identity(value, relation, data):
-            if relation == '=':
-                return value == data
-            if relation == '>=':
-                return float(data) >= value
-            if relation == '<=':
-                return float(data) <= value
-
         self.tw.clear()
         self.statusBar().showMessage("Filtering...")
         app.processEvents()
@@ -111,19 +103,25 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.tw.setHorizontalHeaderLabels(FIELDS_NAME)
 
         id = self.le_id.text().upper() if self.le_id.text() else ""
-        description1 = self.le_description.text().upper() if self.le_description.text() else ""
+        description1 = self.le_description1.text().upper() if self.le_description1.text() else ""
+        description2 = self.le_description2.text().upper() if self.le_description2.text() else ""
         identity_pc = float(self.le_identity.text()) if self.le_identity.text() else 0
         min_align_length = int(self.le_align_length.text()) if self.le_align_length.text() else 0
 
-        sql = "SELECT * FROM sequences WHERE "
+        sql1 = "SELECT * FROM sequences WHERE "
 
         sql2 = ""        
         if id:
             sql2 += f" description LIKE '%{id}%' "
 
         if description1:
+            for term in description1.split(","):
+                if sql2: sql2 += " AND "
+                sql2 += f" description LIKE '%{term}%' "
+
+        if description2:
             if sql2: sql2 += " AND "
-            sql2 += f" description LIKE '%{description1}%' "
+            sql2 += f" description LIKE '%{description2}%' "
 
         if identity_pc:
             if sql2: sql2 += " AND "
@@ -132,6 +130,9 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         if min_align_length:
             if sql2: sql2 += " AND "
             sql2 += f" align_length >= {min_align_length} "
+
+        sql = sql1 + sql2 + " ORDER by identity"
+        self.pte_sql.setPlainText(sql)
 
         cur = self.connection.cursor()
         cur.execute(sql + sql2 + " ORDER by identity")
