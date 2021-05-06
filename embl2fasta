@@ -1,0 +1,19 @@
+#!python3
+
+"""
+convert sequence from EMBL format to FASTA format
+
+usage:
+
+cat seq.dat | embl2fasta
+
+"""
+
+import sys
+from Bio import SeqIO
+
+for record in SeqIO.parse(sys.stdin, "embl"):
+    print(f">{record.name} {record.description}")
+    print(record.seq)
+
+
