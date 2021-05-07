@@ -7,12 +7,14 @@ __version__ = '2'
 __version_date__ = "2021-04-28"
 
 import os
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from skbio.alignment import StripedSmithWaterman
 import sys
 from Bio import SeqIO
 from Bio.Seq import Seq
 from datetime import datetime
+import argparse
+import pathlib as pl
 
 MIN_ALIGN_LENGTH = 0.5
 MIN_IDENTITY = 0.5
@@ -22,9 +24,6 @@ MISMATCH_SCORE = -4
 GAP_OPEN_PENALTY = 12
 GAP_EXTEND_PENALTY = 4
 
-if len(sys.argv) < 3:
-    print("no input", file=sys.stderr)
-    sys.exit(1)
 
 '''
 alignment.aligned_query_sequence      alignment.query_begin                 alignment.target_begin
@@ -36,18 +35,7 @@ alignment.optimal_alignment_score     alignment.suboptimal_alignment_score
 
 
 def output(id, description, alignment):
-    return f"{id}\t{description}\t{alignment['frame']}\t{alignment['identity']}\t{alignment['score']}\t{alignment['align_length']}\t{alignment['target_length']}\t{alignment['aligned_query_sequence']}\t{alignment['aligned_target_sequence']}\t{alignment['query_begin']}\t{alignment['query_end']}\t{alignment['target_begin']}\t{alignment['target_end_optimal']}\n"
-
-# read the query sequence from argv #1
-for record in SeqIO.parse(open(sys.argv[1]), "fasta"):
-    query_id = record.id
-    query_sequence = str(record.seq)
-    query_sequence_length = len(query_sequence)
-
-query = StripedSmithWaterman(query_sequence, zero_index=True, gap_open_penalty=GAP_OPEN_PENALTY, gap_extend_penalty=GAP_EXTEND_PENALTY, match_score=MATCH_SCORE, mismatch_score=MISMATCH_SCORE)
-
-query_sequence_revcomp = str(Seq(query_sequence).reverse_complement())
-query_revcomp = StripedSmithWaterman(query_sequence_revcomp, zero_index=True, gap_open_penalty=GAP_OPEN_PENALTY, gap_extend_penalty=GAP_EXTEND_PENALTY, match_score=MATCH_SCORE, mismatch_score=MISMATCH_SCORE)
+    return f"{id}\t{description}\t{alignment['frame']}\t{alignment['identity']}\t{alignment['score']}\t{alignment['align_length']}\t{alignment['target_length']}\t{alignment['aligned_query_sequence']}\t{alignment['aligned_target_sequence']}\t{alignment['query_begin']}\t{alignment['query_end']}\t{alignment['target_begin']}\t{alignment['target_end_optimal']}"
 
 
 def align(input): # target_seq, target_id, target_description):
@@ -56,8 +44,6 @@ def align(input): # target_seq, target_id, target_description):
     result = ""
 
     frame = "f"
-
-    #target_seq = str(record.seq)
 
     idx = -1
     found_100 = False
@@ -103,9 +89,12 @@ def align(input): # target_seq, target_id, target_description):
                        "target_begin": ssw_alignment.target_begin,
                        "target_end_optimal": ssw_alignment.target_end_optimal,
                        }
+        if MIN_IDENTITY or MIN_ALIGN_LENGTH:
+            if alignment_f["identity"] >= MIN_IDENTITY and alignment_f["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH:
+                result += output(target_id, target_description, alignment_f)
+        else:
+            result += output(record.id, record.description, alignment_f)
 
-        if alignment_f["identity"] >= MIN_IDENTITY and alignment_f["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH:
-            result += output(target_id, target_description, alignment_f)
 
     frame = "r"
     idx = -1
@@ -155,33 +144,104 @@ def align(input): # target_seq, target_id, target_description):
                        "target_end_optimal": ssw_alignment_revcomp.target_end_optimal,
                       }
 
-        if alignment_r["identity"] >= MIN_IDENTITY and alignment_r["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH:
+        if MIN_IDENTITY or MIN_ALIGN_LENGTH:
+            if alignment_r["identity"] >= MIN_IDENTITY and alignment_r["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH:
+               result += output(record.id, record.description, alignment_r)
+        else:
             result += output(record.id, record.description, alignment_r)
 
     return result
 
 def align_mp(seq_list):
 
-    with Pool(os.cpu_count()) as p:
+    with Pool(n_cpu) as p:
         results = p.map(align, seq_list)
     return results
 
-print(("id\tdescription\tframe\tidentity\tscore\talign_length\ttarget_length\taligned_query_sequence\taligned_target_sequence\tquery_begin\tquery_end\ttarget_begin\ttarget_end_optimal"))
 
-seq_list = []
-count = 0
-for record in SeqIO.parse(sys.argv[2], "fasta"):
-    count += 1
-    seq_list.append((str(record.seq), record.id, record.description))
-    if count == 10000:
-        count = 0
-        results = align_mp(seq_list)
-        seq_list = []
-        for result in results:
-            print(result.strip())
+def main():
+
+    # header
+    print(("id\tdescription\tframe\tidentity\tscore\talign_length\ttarget_length\t"
+           "aligned_query_sequence\taligned_target_sequence\tquery_begin\tquery_end\t"
+           "target_begin\ttarget_end_optimal"), file=output_file)
+
+    seq_list = []
+    count = 0
+    for record in SeqIO.parse(target_file, "fasta"):
+        count += 1
+        seq_list.append((str(record.seq), record.id, record.description))
+        if count == 10000:
+            count = 0
+            results = align_mp(seq_list)
+            seq_list = []
+            for result in results:
+                print(result, file=output_file)
 
 
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(prog="SW",
+                                    usage="\nsw.py -q QUERY_PATH -t TARGET_PATH -c N_CORES -o OUTPUT_PATH",
+                                    description="Alignment with Smith-Waterman")
+    parser.add_argument("-q", "--query",  action="store", dest="query", type=str, help="Path of the query file (FASTA format)")
+    parser.add_argument("-t", "--target",  action='store', dest="target", type=str, help="Path of the target sequences (FASTA format)")
+    parser.add_argument("-c", "--cpu", action="store", dest="cpu", default=16, type=int, help="Set number of CPU/cores to use (default all)")
+    parser.add_argument("-o", "--output", action="store", dest="output", help="Set path for the output file")
+    parser.add_argument("-v", "--version", action='version', version=f"%(prog)s v.{__version__} {__version_date__}")
+    parser.add_argument("--min-align-len", action='store', dest="min_align_len", type=float, help="Minimal length of alignment (0-100% of query length)")
+    parser.add_argument("--min-identity", action='store', dest="min_identity", type=float, help="Minimal identity (0-100%)")
+
+    MIN_ALIGN_LENGTH = 0.5
+    MIN_IDENTITY = 0.5
+
+    args = parser.parse_args()
+
+    if not args.query:
+        print('Query file not found!')
+        sys.exit(1)
+    else:
+        query_file = args.query
+
+    if not args.target:
+        print('Target file not found!')
+        sys.exit(1)
+    else:
+        target_file = args.target
+
+    if not args.cpu:
+        n_cpu = cpu_count()
+    else:
+        n_cpu = int(args.cpu)
+
+    if args.output:
+        if pl.Path(args.output).is_file():
+            os.remove(args.output)
+        output_file = open(args.output, "a")
+    else:
+        output_file = sys.stdout
+
+    if args.min_align_len:
+        MIN_ALIGN_LENGTH = args.min_align_len / 100
+    else:
+        MIN_ALIGN_LENGTH = 0
+
+    if args.min_identity:
+        MIN_IDENTITY = args.min_identity / 100
+    else:
+        MIN_IDENTITY = 0
 
 
-    #print(align_sense(str(record.seq), record.id, record.description).strip())
+    # read the query sequence from argv #1
+    for record in SeqIO.parse(query_file, "fasta"):
+        query_id = record.id
+        query_sequence = str(record.seq)
+        query_sequence_length = len(query_sequence)
+
+    query = StripedSmithWaterman(query_sequence, zero_index=True, gap_open_penalty=GAP_OPEN_PENALTY, gap_extend_penalty=GAP_EXTEND_PENALTY, match_score=MATCH_SCORE, mismatch_score=MISMATCH_SCORE)
+
+    query_sequence_revcomp = str(Seq(query_sequence).reverse_complement())
+    query_revcomp = StripedSmithWaterman(query_sequence_revcomp, zero_index=True, gap_open_penalty=GAP_OPEN_PENALTY, gap_extend_penalty=GAP_EXTEND_PENALTY, match_score=MATCH_SCORE, mismatch_score=MISMATCH_SCORE)
+
+    main()
 
