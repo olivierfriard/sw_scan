@@ -3,8 +3,8 @@ align a query sequence with the smith-waterman algorithm (skbio) with sequences 
 (c) Olivier Friard
 """
 
-__version__ = '2'
-__version_date__ = "2021-04-28"
+__version__ = '3'
+__version_date__ = "2021-05-20"
 
 import os
 from multiprocessing import Pool, cpu_count
