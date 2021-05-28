@@ -183,7 +183,7 @@ def main():
     for record in SeqIO.parse(target_file, db_format):
         count += 1
         seq_list.append((str(record.seq), record.id, record.description))
-        if count == 100:
+        if count == 10000:
             count = 0
             results = align_mp(seq_list)
 
@@ -201,6 +201,7 @@ def main():
             # print(result, file=output_file, end="")
             final_results.extend(result)
 
+    # sort by score descending
     final_results.sort(key=lambda x:x[4], reverse=True)
 
     for result in final_results:
