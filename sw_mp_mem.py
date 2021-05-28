@@ -34,14 +34,23 @@ alignment.optimal_alignment_score     alignment.suboptimal_alignment_score
 '''
 
 
-def output(id, description, alignment):
+def output_old(id, description, alignment):
     return f"{id}\t{description}\t{alignment['frame']}\t{alignment['identity']}\t{alignment['score']}\t{alignment['align_length']}\t{alignment['target_length']}\t{alignment['aligned_query_sequence']}\t{alignment['aligned_target_sequence']}\t{alignment['query_begin']}\t{alignment['query_end']}\t{alignment['target_begin']}\t{alignment['target_end_optimal']}\n"
+
+
+def output(id, description, alignment):
+    return [id, description, alignment['frame'], alignment['identity'], alignment['score'],
+            alignment['align_length'], alignment['target_length'],
+            alignment['aligned_query_sequence'], alignment['aligned_target_sequence'],
+            alignment['query_begin'], alignment['query_end'],
+            alignment['target_begin'], alignment['target_end_optimal']
+    ]
 
 
 def align(input):  # target_seq, target_id, target_description):
 
     target_seq, target_id, target_description = input
-    result = ""
+    result = []
 
     frame = "f"
 
@@ -64,7 +73,7 @@ def align(input):  # target_seq, target_id, target_description):
                        "target_begin": idx + 1,
                        "target_end_optimal": idx  + len(query_sequence)
                       }
-        result += output(target_id, target_description, alignment_f)
+        result.append(output(target_id, target_description, alignment_f))
 
     if not found_100:
         ssw_alignment = query(target_seq)
@@ -91,9 +100,9 @@ def align(input):  # target_seq, target_id, target_description):
                        }
         if MIN_IDENTITY or MIN_ALIGN_LENGTH:
             if alignment_f["identity"] >= MIN_IDENTITY and alignment_f["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH:
-                result += output(target_id, target_description, alignment_f)
+                result.append(output(target_id, target_description, alignment_f))
         else:
-            result += output(target_id, target_description, alignment_f)
+            result.append(output(target_id, target_description, alignment_f))
 
 
     frame = "r"
@@ -118,7 +127,7 @@ def align(input):  # target_seq, target_id, target_description):
                        "target_end_optimal": idx + len(query_sequence_revcomp)
                        }
 
-        result += output(target_id, target_description, alignment_r)
+        result.append(output(target_id, target_description, alignment_r))
 
     if not found_100:
         ssw_alignment_revcomp = query_revcomp(target_seq)
@@ -146,9 +155,9 @@ def align(input):  # target_seq, target_id, target_description):
 
         if MIN_IDENTITY or MIN_ALIGN_LENGTH:
             if alignment_r["identity"] >= MIN_IDENTITY and alignment_r["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH:
-               result += output(target_id, target_description, alignment_r)
+               result.append(output(target_id, target_description, alignment_r))
         else:
-            result += output(target_id, target_description, alignment_r)
+            result.append(output(target_id, target_description, alignment_r))
 
     return result
 
@@ -161,6 +170,8 @@ def align_mp(seq_list):
 
 
 def main():
+
+    final_results = []
 
     # header
     print(("id\tdescription\tframe\tidentity\tscore\talign_length\ttarget_length\t"
@@ -175,17 +186,26 @@ def main():
         if count == 100:
             count = 0
             results = align_mp(seq_list)
+
             for result in results:
-                print(result, file=output_file, end="")
-            
+                # print(result, file=output_file, end="")
+                final_results.extend(result)
+
             seq_list = []
 
     # check if seq_list is not empty
     if seq_list:
         results = align_mp(seq_list)
-        for result in results:
-            print(result, file=output_file, end="")
         
+        for result in results:
+            # print(result, file=output_file, end="")
+            final_results.extend(result)
+
+    final_results.sort(key=lambda x:x[4], reverse=True)
+
+    for result in final_results:
+        print("\t".join([str(x) for x in result]), file=output_file)
+
     output_file.close()
 
 
