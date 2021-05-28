@@ -16,8 +16,8 @@ from datetime import datetime
 import argparse
 import pathlib as pl
 
-MIN_ALIGN_LENGTH = 0.5
-MIN_IDENTITY = 0.5
+MIN_ALIGN_LENGTH_DEFAULT = 0.5
+MIN_IDENTITY_DEFAULT = 0.5
 
 MATCH_SCORE = 5
 MISMATCH_SCORE = -4
@@ -35,10 +35,10 @@ alignment.optimal_alignment_score     alignment.suboptimal_alignment_score
 
 
 def output(id, description, alignment):
-    return f"{id}\t{description}\t{alignment['frame']}\t{alignment['identity']}\t{alignment['score']}\t{alignment['align_length']}\t{alignment['target_length']}\t{alignment['aligned_query_sequence']}\t{alignment['aligned_target_sequence']}\t{alignment['query_begin']}\t{alignment['query_end']}\t{alignment['target_begin']}\t{alignment['target_end_optimal']}"
+    return f"{id}\t{description}\t{alignment['frame']}\t{alignment['identity']}\t{alignment['score']}\t{alignment['align_length']}\t{alignment['target_length']}\t{alignment['aligned_query_sequence']}\t{alignment['aligned_target_sequence']}\t{alignment['query_begin']}\t{alignment['query_end']}\t{alignment['target_begin']}\t{alignment['target_end_optimal']}\n"
 
 
-def align(input): # target_seq, target_id, target_description):
+def align(input):  # target_seq, target_id, target_description):
 
     target_seq, target_id, target_description = input
     result = ""
@@ -81,7 +81,7 @@ def align(input): # target_seq, target_id, target_description):
                        "score": ssw_alignment['optimal_alignment_score'],
                        "identity": round(identity, 2),
                        "align_length": len(ssw_alignment.aligned_target_sequence),
-                       "target_length": len(record.seq),
+                       "target_length": len(target_seq),
                        "aligned_query_sequence": ssw_alignment.aligned_query_sequence,
                        "aligned_target_sequence": ssw_alignment.aligned_target_sequence,
                        "query_begin":  ssw_alignment.query_begin,
@@ -93,7 +93,7 @@ def align(input): # target_seq, target_id, target_description):
             if alignment_f["identity"] >= MIN_IDENTITY and alignment_f["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH:
                 result += output(target_id, target_description, alignment_f)
         else:
-            result += output(record.id, record.description, alignment_f)
+            result += output(target_id, target_description, alignment_f)
 
 
     frame = "r"
@@ -133,7 +133,7 @@ def align(input): # target_seq, target_id, target_description):
                        "score": ssw_alignment_revcomp['optimal_alignment_score'],
                        "identity": round(identity, 2),
                        "align_length": len(ssw_alignment_revcomp.aligned_target_sequence),
-                       "target_length": len(record.seq),
+                       "target_length": len(target_seq),
                        #"aligned_query_sequence": ssw_alignment_revcomp.aligned_query_sequence,
                        "aligned_query_sequence": str(Seq(ssw_alignment_revcomp.aligned_query_sequence).reverse_complement()),
                        #"aligned_target_sequence": ssw_alignment_revcomp.aligned_target_sequence,
@@ -146,11 +146,12 @@ def align(input): # target_seq, target_id, target_description):
 
         if MIN_IDENTITY or MIN_ALIGN_LENGTH:
             if alignment_r["identity"] >= MIN_IDENTITY and alignment_r["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH:
-               result += output(record.id, record.description, alignment_r)
+               result += output(target_id, target_description, alignment_r)
         else:
-            result += output(record.id, record.description, alignment_r)
+            result += output(target_id, target_description, alignment_r)
 
     return result
+
 
 def align_mp(seq_list):
 
@@ -168,21 +169,21 @@ def main():
 
     seq_list = []
     count = 0
-    for record in SeqIO.parse(target_file, "fasta"):
+    for record in SeqIO.parse(target_file, db_format):
         count += 1
         seq_list.append((str(record.seq), record.id, record.description))
-        if count == 10000:
+        if count == 100:
             count = 0
             results = align_mp(seq_list)
             for result in results:
-                print(result, file=output_file)
+                print(result, file=output_file, end="")
             seq_list = []
 
     # check if seq_list is not empty
     if seq_list:
         results = align_mp(seq_list)
         for result in results:
-            print(result, file=output_file)
+            print(result, file=output_file, end="")
 
 
 if __name__ == '__main__':
@@ -204,16 +205,34 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if not args.query:
-        print('Query file not found!')
+        print('Query file not specified!', file=sys.stderr)
         sys.exit(1)
     else:
         query_file = args.query
+        if not pl.Path(query_file).is_file():
+            print('Query file not found!', file=sys.stderr)
+            sys.exit(1)
 
     if not args.target:
-        print('Target file not found!')
+        print('Target file not specified!', file=sys.stderr)
         sys.exit(1)
     else:
         target_file = args.target
+        if not pl.Path(target_file).is_file():
+            print('Target file not found!', file=sys.stderr)
+            sys.exit(1)
+        # check DB format
+        db_format = ""
+        with open(target_file, "r") as f:
+            content = f.read(50)
+            if content.startswith(">"):
+                db_format = 'fasta'
+            if content.startswith("ID "):
+                db_format = 'embl'
+        if not db_format:
+            print('Database format not recognized! Use FASTA or EMBL formats', file=sys.stderr)
+            sys.exit(1)
+
 
     if not args.cpu:
         n_cpu = cpu_count()
@@ -230,12 +249,12 @@ if __name__ == '__main__':
     if args.min_align_len:
         MIN_ALIGN_LENGTH = args.min_align_len / 100
     else:
-        MIN_ALIGN_LENGTH = 0
+        MIN_ALIGN_LENGTH = MIN_ALIGN_LENGTH_DEFAULT
 
     if args.min_identity:
         MIN_IDENTITY = args.min_identity / 100
     else:
-        MIN_IDENTITY = 0
+        MIN_IDENTITY = MIN_IDENTITY_DEFAULT
 
 
     # read the query sequence from argv #1
