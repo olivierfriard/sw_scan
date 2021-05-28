@@ -174,9 +174,15 @@ def main():
         if count == 10000:
             count = 0
             results = align_mp(seq_list)
-            seq_list = []
             for result in results:
                 print(result, file=output_file)
+            seq_list = []
+
+    # check if seq_list is not empty
+    if seq_list:
+        results = align_mp(seq_list)
+        for result in results:
+            print(result, file=output_file)
 
 
 if __name__ == '__main__':
