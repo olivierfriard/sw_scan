@@ -22,8 +22,9 @@ import sys
 import pandas as pd
 import sqlite3
 
-__version__ = '2'
-__version_date__ = "2021-04-28"
+__version__ = '3'
+__version_date__ = "2021-06-21"
+
 
 class SW_Scan(QMainWindow, Ui_MainWindow):
 
@@ -54,6 +55,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.pb_filter.clicked.connect(self.filter)
         self.pb_clear.clicked.connect(self.clear)
         self.pb_run_query.clicked.connect(self.run_query)
+        self.pb_save_fasta.clicked.connect(self.save_fasta)
         self.pb_save_tsv.clicked.connect(self.save_tsv)
         self.pb_save_fbs.clicked.connect(self.save_fbs)
         self.actionAbout.triggered.connect(self.about)
@@ -221,7 +223,28 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             self.statusBar().showMessage(f"{self.tw.rowCount()} sequences found")
 
 
+    def save_fasta(self):
+        """
+        save sequences from selected results in FASTA format
+        """
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save file in FASTA format", "")
+        if not file_name:
+            return
+        with open(file_name, "w") as f_out:
+            for row in range(self.tw.rowCount()):
+                for col, field_name in enumerate(FIELDS_NAME):
+                    if field_name == "accession":
+                        print(">" + self.tw.item(row, col).text(), file=f_out)
+                    if field_name == "aligned_target_sequence":
+                        seq = self.tw.item(row, col).text().replace("-", "")
+                        print(seq, file=f_out)
+
+
     def save_tsv(self):
+        """
+        save selected results in TSV format (same as input)
+        """
+
         file_name, _ = QFileDialog.getSaveFileName(self, "Save file TSV", "")
         if not file_name:
             return
