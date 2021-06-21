@@ -24,6 +24,8 @@ MISMATCH_SCORE = -4
 GAP_OPEN_PENALTY = 12
 GAP_EXTEND_PENALTY = 4
 
+MP_MAX_SEQUENCES_NUMBER = 10000
+
 
 '''
 alignment.aligned_query_sequence      alignment.query_begin                 alignment.target_begin
@@ -183,7 +185,7 @@ def main():
     for record in SeqIO.parse(target_file, db_format):
         count += 1
         seq_list.append((str(record.seq), record.id, record.description))
-        if count == 10000:
+        if count == MP_MAX_SEQUENCES_NUMBER:
             count = 0
             results = align_mp(seq_list)
 
@@ -215,8 +217,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog="SW",
                                     usage="\nsw.py -q QUERY_PATH -t TARGET_PATH -c N_CORES -o OUTPUT_PATH",
                                     description="Alignment with Smith-Waterman")
-    parser.add_argument("-q", "--query",  action="store", dest="query", type=str, help="Path of the query file (FASTA format)")
-    parser.add_argument("-t", "--target",  action='store', dest="target", type=str, help="Path of the target sequences (FASTA format)")
+    parser.add_argument("-q", "--query", action="store", dest="query", type=str, help="Path of the query file (FASTA format)")
+    parser.add_argument("-t", "--target", action='store', dest="target", type=str, help="Path of the target sequences (FASTA format)")
+    parser.add_argument("-f", "--db-format", action='store', dest="db_format", type=str, help="Format of the database (embl or fasta), only for stdin")
     parser.add_argument("-c", "--cpu", action="store", dest="cpu", default=16, type=int, help="Set number of CPU/cores to use (default all)")
     parser.add_argument("-o", "--output", action="store", dest="output", help="Set path for the output file")
     parser.add_argument("-v", "--version", action='version', version=f"%(prog)s v.{__version__} {__version_date__}")
@@ -237,25 +240,34 @@ if __name__ == '__main__':
             print('Query file not found!', file=sys.stderr)
             sys.exit(1)
 
+    # database
     if not args.target:
         print('Target file not specified!', file=sys.stderr)
         sys.exit(1)
     else:
         target_file = args.target
-        if not pl.Path(target_file).is_file():
-            print('Target file not found!', file=sys.stderr)
-            sys.exit(1)
-        # check DB format
-        db_format = ""
-        with open(target_file, "r") as f:
-            content = f.read(50)
-            if content.startswith(">"):
-                db_format = 'fasta'
-            if content.startswith("ID "):
-                db_format = 'embl'
-        if not db_format:
-            print('Database format not recognized! Use FASTA or EMBL formats', file=sys.stderr)
-            sys.exit(1)
+        if target_file == '-':
+            target_file = sys.stdin
+            if args.db_format:
+                db_format = args.db_format.lower()
+            if not args.db_format or db_format not in ('embl', 'fasta'):
+                print('The database format was not specified! Use FASTA or EMBL formats', file=sys.stderr)
+                sys.exit(1)
+        else:
+            if not pl.Path(target_file).is_file():
+                print('Target file not found!', file=sys.stderr)
+                sys.exit(1)
+            # check DB format
+            db_format = ""
+            with open(target_file, "r") as f:
+                content = f.read(50)
+                if content.startswith(">"):
+                    db_format = 'fasta'
+                if content.startswith("ID "):
+                    db_format = 'embl'
+            if not db_format:
+                print('Database format not recognized! Use FASTA or EMBL formats', file=sys.stderr)
+                sys.exit(1)
 
 
     if not args.cpu:
@@ -287,10 +299,20 @@ if __name__ == '__main__':
         query_sequence = str(record.seq)
         query_sequence_length = len(query_sequence)
 
-    query = StripedSmithWaterman(query_sequence, zero_index=True, gap_open_penalty=GAP_OPEN_PENALTY, gap_extend_penalty=GAP_EXTEND_PENALTY, match_score=MATCH_SCORE, mismatch_score=MISMATCH_SCORE)
+    query = StripedSmithWaterman(query_sequence,
+                                 zero_index=True,
+                                 gap_open_penalty=GAP_OPEN_PENALTY,
+                                 gap_extend_penalty=GAP_EXTEND_PENALTY,
+                                 match_score=MATCH_SCORE,
+                                 mismatch_score=MISMATCH_SCORE)
 
     query_sequence_revcomp = str(Seq(query_sequence).reverse_complement())
-    query_revcomp = StripedSmithWaterman(query_sequence_revcomp, zero_index=True, gap_open_penalty=GAP_OPEN_PENALTY, gap_extend_penalty=GAP_EXTEND_PENALTY, match_score=MATCH_SCORE, mismatch_score=MISMATCH_SCORE)
+    query_revcomp = StripedSmithWaterman(query_sequence_revcomp,
+                                         zero_index=True,
+                                         gap_open_penalty=GAP_OPEN_PENALTY,
+                                         gap_extend_penalty=GAP_EXTEND_PENALTY,
+                                         match_score=MATCH_SCORE,
+                                         mismatch_score=MISMATCH_SCORE)
 
     main()
 
