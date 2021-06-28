@@ -212,16 +212,20 @@ def main():
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(prog="SW",
-                                    usage="\nsw.py -q QUERY_PATH -t TARGET_PATH -c N_CORES -o OUTPUT_PATH",
-                                    description="Alignment with Smith-Waterman")
+                                     description="Alignment of a sequence against database with the Smith-Waterman algorithm.",
+                                     usage=("sw.py -q QUERY_PATH -t TARGET_PATH -c N_CORES -o OUTPUT_PATH"
+                                            "\nor:\n"
+                                            "cat my_database.dtb | sw -q QUERY_PATH -t - -f DB_FORMAT -c N_CORES -o OUTPUT_PATH"
+                                           )
+                                    )
     parser.add_argument("-q", "--query", action="store", dest="query", type=str, help="Path of the query file (FASTA format)")
     parser.add_argument("-t", "--target", action='store', dest="target", type=str, help="Path of the target sequences (FASTA format)")
     parser.add_argument("-f", "--db-format", action='store', dest="db_format", type=str, help="Format of the database (embl or fasta), only for stdin")
     parser.add_argument("-c", "--cpu", action="store", dest="cpu", default=16, type=int, help="Set number of CPU/cores to use (default all)")
-    parser.add_argument("-o", "--output", action="store", dest="output", help="Set path for the output file")
-    parser.add_argument("-v", "--version", action='version', version=f"%(prog)s v.{__version__} {__version_date__}")
-    parser.add_argument("--min-align-len", action='store', dest="min_align_len", type=float, help="Minimal length of alignment (0-100% of query length)")
-    parser.add_argument("--min-identity", action='store', dest="min_identity", type=float, help="Minimal identity (0-100%)")
+    parser.add_argument("-o", "--output", action="store", dest="output", type=str, help="Set path for the output file")
+    parser.add_argument("-v", "--version", action='version', version=f"%(prog)s v.{__version__} {__version_date__}", help="Display the help")
+    parser.add_argument("--min-align-len", action='store', dest="min_align_len", type=float, help="Minimal length of alignment (0-100%% of query length)")
+    parser.add_argument("--min-identity", action='store', dest="min_identity", type=float, help="Minimal identity (0-100%%)")
 
     MIN_ALIGN_LENGTH = 0.5
     MIN_IDENTITY = 0.5
