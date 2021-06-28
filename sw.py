@@ -1,10 +1,10 @@
 """
-align a query sequence with the smith-waterman algorithm (skbio) with sequences in a multi fasta file
+align a query sequence with the smith-waterman algorithm (skbio) with sequences from a multi fasta file or EMBL format (see ENA)
 (c) Olivier Friard
 """
 
-__version__ = '3'
-__version_date__ = "2021-05-20"
+__version__ = '4'
+__version_date__ = "2021-06-21"
 
 import os
 from multiprocessing import Pool, cpu_count
@@ -12,7 +12,6 @@ from skbio.alignment import StripedSmithWaterman
 import sys
 from Bio import SeqIO
 from Bio.Seq import Seq
-from datetime import datetime
 import argparse
 import pathlib as pl
 
@@ -198,9 +197,7 @@ def main():
     # check if seq_list is not empty
     if seq_list:
         results = align_mp(seq_list)
-        
         for result in results:
-            # print(result, file=output_file, end="")
             final_results.extend(result)
 
     # sort by score descending
