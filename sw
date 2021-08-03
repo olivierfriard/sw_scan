@@ -5,8 +5,8 @@ align a query sequence with the smith-waterman algorithm (skbio) with sequences 
 (c) Olivier Friard
 """
 
-__version__ = '4'
-__version_date__ = "2021-06-21"
+__version__ = '5'
+__version_date__ = "2021-08-03"
 
 import os
 from multiprocessing import Pool, cpu_count
