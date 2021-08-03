@@ -33,7 +33,7 @@ alignment.aligned_query_sequence      alignment.query_begin                 alig
 alignment.aligned_target_sequence     alignment.query_end                   alignment.target_end_optimal
 alignment.cigar                       alignment.query_sequence              alignment.target_end_suboptimal
 alignment.is_zero_based(              alignment.set_zero_based(             alignment.target_sequence
-alignment.optimal_alignment_score     alignment.suboptimal_alignment_score  
+alignment.optimal_alignment_score     alignment.suboptimal_alignment_score
 '''
 
 
@@ -172,8 +172,38 @@ def align_mp(seq_list):
     return results
 
 
+
+
 def main():
 
+    def align_file(target_file):
+
+        count = 0
+        seq_number = 0
+        seq_list = []
+        for record in SeqIO.parse(target_file, db_format):
+            seq_number += 1
+            count += 1
+            seq_list.append((str(record.seq), record.id, record.description))
+            if count == MP_MAX_SEQUENCES_NUMBER:
+                count = 0
+                results = align_mp(seq_list)
+
+                for result in results:
+                    # print(result, file=output_file, end="")
+                    final_results.extend(result)
+
+                seq_list = []
+
+        # check if seq_list is not empty
+        if seq_list:
+            results = align_mp(seq_list)
+            for result in results:
+                final_results.extend(result)
+        return seq_number
+
+
+    tot_seq_nb = 0
     final_results = []
 
     # header
@@ -181,26 +211,16 @@ def main():
            "aligned_query_sequence\taligned_target_sequence\tquery_begin\tquery_end\t"
            "target_begin\ttarget_end_optimal"), file=output_file)
 
-    seq_list = []
-    count = 0
-    for record in SeqIO.parse(target_file, db_format):
-        count += 1
-        seq_list.append((str(record.seq), record.id, record.description))
-        if count == MP_MAX_SEQUENCES_NUMBER:
-            count = 0
-            results = align_mp(seq_list)
 
-            for result in results:
-                # print(result, file=output_file, end="")
-                final_results.extend(result)
+    if not list_of_files:
+        tot_seq_nb += align_file(target_file)
+    else:
+        with open(target_file, "r") as f_in:
+            for line in f_in:
+                target_file2 = line.strip().split(" ")[0]
+                if target_file2:
+                    tot_seq_nb += align_file(target_file2)
 
-            seq_list = []
-
-    # check if seq_list is not empty
-    if seq_list:
-        results = align_mp(seq_list)
-        for result in results:
-            final_results.extend(result)
 
     # sort by score descending
     final_results.sort(key=lambda x:x[4], reverse=True)
@@ -209,6 +229,8 @@ def main():
         print("\t".join([str(x) for x in result]), file=output_file)
 
     output_file.close()
+
+    print(f"{tot_seq_nb} sequence(s) found in database.", file=sys.stderr)
 
 
 if __name__ == '__main__':
@@ -225,7 +247,7 @@ if __name__ == '__main__':
     parser.add_argument("-f", "--db-format", action='store', dest="db_format", type=str, help="Format of the database (embl or fasta), only for stdin")
     parser.add_argument("-c", "--cpu", action="store", dest="cpu", default=16, type=int, help="Set number of CPU/cores to use (default all)")
     parser.add_argument("-o", "--output", action="store", dest="output", type=str, help="Set path for the output file")
-    parser.add_argument("-v", "--version", action='version', version=f"%(prog)s v.{__version__} {__version_date__}", help="Display the help")
+    parser.add_argument("-v", "--version", action='version', version=f"%(prog)s v.{__version__} {__version_date__} (c) Olivier Friard 2021", help="Display the help")
     parser.add_argument("--min-align-len", action='store', dest="min_align_len", type=float, help="Minimal length of alignment (0-100%% of query length)")
     parser.add_argument("--min-identity", action='store', dest="min_identity", type=float, help="Minimal identity (0-100%%)")
 
@@ -249,7 +271,7 @@ if __name__ == '__main__':
         sys.exit(1)
     else:
         target_file = args.target
-        if target_file == '-':
+        if target_file == '-':  # read on stdin
             target_file = sys.stdin
             if args.db_format:
                 db_format = args.db_format.lower()
@@ -260,17 +282,43 @@ if __name__ == '__main__':
             if not pl.Path(target_file).is_file():
                 print('Target file not found!', file=sys.stderr)
                 sys.exit(1)
+
             # check DB format
             db_format = ""
+            list_of_files = False
             with open(target_file, "r") as f:
-                content = f.read(50)
+                content = f.read(4)
                 if content.startswith(">"):
                     db_format = 'fasta'
                 if content.startswith("ID "):
                     db_format = 'embl'
-            if not db_format:
+                if content.startswith("/"):  # file is list of files
+                    list_of_files = True
+
+            if not db_format and not list_of_files:
                 print('Database format not recognized! Use FASTA or EMBL formats', file=sys.stderr)
                 sys.exit(1)
+
+            # check db_format in case of list of file
+            if list_of_files:
+                db_format = ""
+                with open(target_file, "r") as f_in:
+                    for line in f_in:
+                        with open(line.strip().split(" ")[0]) as f_in2:
+                            content = f_in2.read(4)
+                            if content.startswith("ID "):
+                                db_format = 'embl'
+                                break
+                            if content.startswith(">"):
+                                db_format = 'fasta'
+                                break
+
+                if not db_format:
+                    print('Database format not recognized! Use FASTA or EMBL formats', file=sys.stderr)
+                    sys.exit(1)
+
+                # print(f"list of files {db_format}")
+
 
 
     if not args.cpu:
