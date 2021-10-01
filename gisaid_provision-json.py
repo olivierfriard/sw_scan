@@ -14,7 +14,7 @@ with open(sys.argv[1], "r") as f_in:
     for line in f_in:
         print(line)
         line_from_json = json.loads(line)
-        print(line_from_json)
+        print(sorted(list(line_from_json.keys())))
         break
     
 
