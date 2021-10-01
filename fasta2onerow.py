@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+"""
+convert multi-row fasta fiel in a one-row fasta file
+
+Usage:
+
+python3 fasta2onerow.py MULTI_ROWS_FASTA_FILE > ONE_ROW_FASTA_FILE
+
+"""
+
 from Bio import SeqIO
 import sys
 
