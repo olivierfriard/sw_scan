@@ -11,5 +11,5 @@ if not pl.Path(sys.argv[1]).is_file:
 
 with open(sys.argv[1], "r") as f_in:
     print(f_in.readline())
-    break
+    
 
