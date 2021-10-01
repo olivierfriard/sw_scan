@@ -32,6 +32,10 @@ sequence_length: 29862
 
 """
 
+__version__ = '1'
+__author__ = 'Olivier Friard'
+
+
 import sys
 import json
 import pathlib as pl
@@ -40,10 +44,20 @@ if not pl.Path(sys.argv[1]).is_file:
     print("file not found")
     sys.exit()
 
+header_ok = False
+
 with open(sys.argv[1], "r") as f_in, open(sys.argv[2], "w") as f_out:
     for line in f_in:
-        #print(line)
+
         line_from_json = json.loads(line)
+
+        # print header on the first row
+        if not header_ok:
+            for k in list(line_from_json.keys()):
+                print(k, end="\t")
+            header_ok = True
+            print()
+
         for k in list(line_from_json.keys()):
 
             # one-row fasta file
