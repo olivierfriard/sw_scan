@@ -10,6 +10,8 @@ if not pl.Path(sys.argv[1]).is_file:
     sys.exit()
 
 with open(sys.argv[1], "r") as f_in:
-    print(f_in.readline())
+    for line in f_in:
+        print(line)
+        break
     
 
