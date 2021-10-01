@@ -8,7 +8,7 @@ create a fasta one-row file
 example of metadata:
 
 covsurver_prot_mutations: (Spike_D614G,NSP15_A283V,NSP12_P323L)
-covsurver_uniquemutlist: 
+covsurver_uniquemutlist:
 covv_accession_id: EPI_ISL_426900
 covv_clade: G
 covv_collection_date: 2020-03-25
@@ -18,7 +18,7 @@ covv_location: Oceania / Australia / Northern Territory
 covv_passage: Original
 covv_subm_date: 2020-04-17
 covv_type: betacoronavirus
-covv_variant: 
+covv_variant:
 covv_virus_name: hCoV-19/Australia/NT12/2020
 gc_content: 0.3796742758876488
 is_complete: True
@@ -27,7 +27,6 @@ is_reference: False
 n_content: 0.006864911928203068
 pangolin_lineages_version: 2021-09-16
 sequence_length: 29862
-
 
 
 """
@@ -62,7 +61,7 @@ with open(sys.argv[1], "r") as f_in, open(sys.argv[2], "w") as f_out:
 
             # one-row fasta file
             if k == 'sequence':
-                print(f">{line_from_json['covv_accession_id']}", file=f_out)
+                print(f">{line_from_json['covv_accession_id']}|{line_from_json['covv_virus_name']}|{line_from_json['covv_collection_date']}|{line_from_json['covv_lineage']}|", file=f_out)
                 print(line_from_json[k].replace("\n", ""), file=f_out)
                 continue
 
