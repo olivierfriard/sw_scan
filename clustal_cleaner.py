@@ -7,7 +7,8 @@ Clear the CLUSTAL output and position the forward and reverse primers
 
 """
 
-
+__version__ = '1'
+__version_date__ = "2021-10-18"
 
 import sys
 import pathlib as pl
