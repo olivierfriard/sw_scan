@@ -7,7 +7,7 @@ Clear the CLUSTAL output and position the forward and reverse primers
 
 """
 
-__version__ = '1'
+__version__ = '2'
 __version_date__ = "2021-10-18"
 
 import sys
@@ -17,10 +17,7 @@ import argparse
 from Bio import AlignIO
 from Bio.Seq import Seq
 
-parser = argparse.ArgumentParser(
-    description='Clustal Cleaner',
-)
-
+parser = argparse.ArgumentParser(description='Clustal Cleaner',)
 
 parser.add_argument('-i', action="store", dest="input")
 parser.add_argument('-m', action="store", dest="model")
@@ -96,15 +93,21 @@ print("<pre>")
 
 # header
 header = " " * [len(sequences[k]) for k in sequences][0]
+header_out = header
 
-# add forward 
-header_out = header[0:forward_idx] + forward_seq  + header[forward_idx + len(forward_seq):]
+# add forward
+if forward_idx != -1:
+    header_out = header[0:forward_idx] + forward_seq  + header[forward_idx + len(forward_seq):]
 
 # add reverse
-header_out = header_out[0:reverse_idx] + reverse_seq  + header_out[reverse_idx + len(reverse_seq):]
+if reverse_idx != -1:
+    header_out = header_out[0:reverse_idx] + reverse_seq  + header_out[reverse_idx + len(reverse_seq):]
 
-header_out = header_out.replace(forward_seq, SPAN_F_OPEN + forward_seq + SPAN_CLOSE)
-header_out = header_out.replace(reverse_seq, SPAN_R_OPEN + reverse_seq + SPAN_CLOSE)
+if forward_idx != -1:
+    header_out = header_out.replace(forward_seq, SPAN_F_OPEN + forward_seq + SPAN_CLOSE)
+
+if reverse_idx != -1:
+    header_out = header_out.replace(reverse_seq, SPAN_R_OPEN + reverse_seq + SPAN_CLOSE)
 
 print(" " * (max_len_id + 5), end="")
 print(header_out)
@@ -119,14 +122,10 @@ if forward_idx != -1:
 else:
     ref_seq_out = ref_seq
 
-
 if reverse_idx != -1:
     ref_seq_out = ref_seq_out.replace(reverse_seq, SPAN_R_OPEN + reverse_seq + SPAN_CLOSE)
 
-
 print(ref_seq_out)
-
-
 
 for id in sequences:
     seq = sequences[id]
