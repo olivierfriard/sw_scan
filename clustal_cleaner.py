@@ -2,7 +2,7 @@
 
 CLUSTAL Cleaner
 
-Clear the CLUSTAL output in correspondence of forward and reverse primers
+Clear the CLUSTAL output and position the forward and reverse primers
 (c) Olivier Friard
 
 """
