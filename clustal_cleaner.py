@@ -64,6 +64,9 @@ if len(set([len(sequences[k]) for k in sequences])) != 1:
     print("error reading the CLUSTAL output. Different sequence lengths were found", file=sys.stderr)
     sys.exit(1)
 
+forward_idx = -1
+reverse_idx = -1
+
 if forward_seq:
     for id in sequences:
         if forward_seq in sequences[id]:
