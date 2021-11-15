@@ -61,7 +61,7 @@ with open(sys.argv[1], "r") as f_in, open(sys.argv[2], "w") as f_out:
 
             # one-row fasta file
             if k == 'sequence':
-                print(f">{line_from_json['covv_accession_id']}|{line_from_json['covv_virus_name']}|{line_from_json['covv_collection_date']}|{line_from_json['covv_lineage']}|", file=f_out)
+                print(f">{line_from_json['covv_accession_id']}|{line_from_json['covv_virus_name'].replace(' ', '-')}|{line_from_json['covv_collection_date']}|{line_from_json['covv_lineage']}|", file=f_out)
                 print(line_from_json[k].replace("\n", ""), file=f_out)
                 continue
 
