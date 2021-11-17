@@ -338,8 +338,6 @@ if __name__ == '__main__':
                     print('Database format not recognized! Use FASTA or EMBL formats', file=sys.stderr)
                     sys.exit(1)
 
-                # print(f"list of files {db_format}")
-
 
 
     if not args.cpu:

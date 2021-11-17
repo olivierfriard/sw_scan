@@ -36,7 +36,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.initialize_var()
 
         self.connections()
-        
+
         app.processEvents()
 
         if input_file_name:
@@ -155,7 +155,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
         sql1 = "SELECT * FROM sequences WHERE "
 
-        sql2 = ""        
+        sql2 = ""
         if id:
             sql2 += f" description LIKE '%{id}%' "
 
@@ -181,7 +181,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             sql = sql1 + sql2 + SEQ_ORDER
             flag_all = False
         else:
-            sql = f"SELECT * FROM sequences {SEQ_ORDER} LIMIT {SEQ_LIMIT_NB}" 
+            sql = f"SELECT * FROM sequences {SEQ_ORDER} LIMIT {SEQ_LIMIT_NB}"
             flag_all = True
 
         self.pte_sql.setPlainText(sql)
@@ -206,7 +206,15 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
 
     def run_query(self):
-        if self.pte_sql.toPlainText():
+        if self.pte_sql.toPlainText():        if self.cb_include_all_seq.isChecked():
+
+            cur = self.connection.cursor()
+            # check max id length
+            max_id_len = 0
+            sql = "SELECT MAX(length(id) + length(description)) AS max_id_descr_len FROM sequences"
+            cur.execute(sql)
+            max_id_len = int(cur.fetchone()['max_id_descr_len'])
+
 
             self.tw.setRowCount(0)
             self.tw.setColumnCount(len(FIELDS_NAME))
@@ -290,7 +298,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         if not file_name:
             return
 
-        
+
         if self.cb_include_all_seq.isChecked():
 
             cur = self.connection.cursor()
@@ -302,25 +310,6 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             print(f"{max_id_len=}")
 
             '''
-            aligned_query_list = []
-            for row in rows:
-                print(row['id'])
-                print(row['aligned_query_sequence'])
-                max_id_len = max(max_id_len, len(row['id']) + len(row['description']) + 1)
-
-                if aligned_query_list == []:
-                    aligned_query_list.append(row['aligned_query_sequence'])
-                else:
-                    flag_in = False
-
-                    for x in aligned_query_list:
-                        if row['aligned_query_sequence'] in x:
-                            flag_in = True
-                            break
-                    if not flag_in:
-                        aligned_query_list.append(row['aligned_query_sequence']) 
-            '''
-
             with open(file_name, "w") as f_out:
                 out = ""
 
@@ -363,70 +352,8 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
                     out += "\n\n"
 
-                f_out.write(out) 
-
-
-        else:
-            # check max id length
-            max_id_len = 0
-            for row in range(self.tw.rowCount()):
-                max_id_len = max(max_id_len, len(self.tw.item(row, 0).text())+ len(self.tw.item(row, 1).text()) + 1)
-
-            aligned_query_list = []
-            for row in range(self.tw.rowCount()):
-                if aligned_query_list == []:
-                    aligned_query_list.append(self.tw.item(row, 7).text())
-                else:
-                    flag_in = False
-                    for x in aligned_query_list:
-                        if self.tw.item(row, 7).text() in x:
-                            flag_in = True
-                            break
-                    if not flag_in:
-                        aligned_query_list.append(self.tw.item(row, 7).text()) 
-
-            with open(file_name, "w") as f_out:
-                out = ""
-                for aligned_query in aligned_query_list:
-                    out += "query" + (" " *  (max_id_len + 5 - 5)) + aligned_query + "\n"
-                    for row in range(self.tw.rowCount()):
-
-                        # check aligned query
-                        if self.tw.item(row, 7).text() not in aligned_query:
-                            continue
-
-                        id, descr, id_descr = "", "", ""
-                        for col, _ in enumerate(FIELDS_NAME):
-
-                            if col == 0:
-                                id = self.tw.item(row, col).text()
-
-                            if col == 1:  # description
-                                descr = self.tw.item(row, col).text()
-
-                            if id and descr and not id_descr:
-                                id_descr = f"{id} {descr}"
-                                while len(id_descr) < max_id_len + 5:
-                                    id_descr += ' '
-                                out += id_descr
-
-
-                            if col == 8: # align target sequence
-                                ats = ""
-                                aligned_target_sequence = self.tw.item(row, col).text()
-                                aligned_target_sequence = (" " * aligned_query.index(self.tw.item(row, 7).text())) + aligned_target_sequence
-                                for nq, nt in zip(aligned_query, aligned_target_sequence):
-                                    if nq == nt:
-                                        ats += "."
-                                    elif nt == " ":
-                                        ats += " "
-                                    else:
-                                        ats += nt
-
-                                out += ats + "\n"
-                    out += "\n\n"
-
-                f_out.write(out) 
+                f_out.write(out)
+            '''
 
 
 
@@ -440,5 +367,5 @@ if __name__ == "__main__":
     program.show()
     program.raise_()
     sys.exit(app.exec_())
-    
+
 
