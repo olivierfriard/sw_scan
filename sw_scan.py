@@ -36,7 +36,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.initialize_var()
 
         self.connections()
-
+        
         app.processEvents()
 
         if input_file_name:
@@ -96,19 +96,13 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.statusBar().showMessage("Loading file...")
         app.processEvents()
 
-        #self.connection = sqlite3.connect(':memory:')
-
-        self.connection = sqlite3.connect('1.sqlite')
-        self.connection.row_factory = sqlite3.Row
-
-        #cur = self.connection.cursor()
-        #cur.execute('create table sequences (accession text, description text, frame text, identity float, score float, align_length int, target_length int, aligned_query_sequence text, aligned_target_sequence text, query_begin int, query_end int, target_begin int, target_end_optimal int)')
-        #self.connection.commit()
+        self.connection = sqlite3.connect(':memory:')
+        cur = self.connection.cursor()
+        cur.execute('create table sequences (accession text, description text, frame text, identity float, score float, align_length int, target_length int, aligned_query_sequence text, aligned_target_sequence text, query_begin int, query_end int, target_begin int, target_end_optimal int)')
+        self.connection.commit()
 
         df = pd.read_csv(self.file_name, sep='\t')
         df.to_sql('sequences', self.connection, if_exists='replace', index=False)
-
-        cur = self.connection.cursor()
         cur.execute('SELECT count(*) FROM sequences')
         row = cur.fetchone()
         self.n_seq = row[0]
@@ -155,7 +149,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
         sql1 = "SELECT * FROM sequences WHERE "
 
-        sql2 = ""
+        sql2 = ""        
         if id:
             sql2 += f" description LIKE '%{id}%' "
 
@@ -181,7 +175,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             sql = sql1 + sql2 + SEQ_ORDER
             flag_all = False
         else:
-            sql = f"SELECT * FROM sequences {SEQ_ORDER} LIMIT {SEQ_LIMIT_NB}"
+            sql = f"SELECT * FROM sequences {SEQ_ORDER} LIMIT {SEQ_LIMIT_NB}" 
             flag_all = True
 
         self.pte_sql.setPlainText(sql)
@@ -206,15 +200,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
 
     def run_query(self):
-        if self.pte_sql.toPlainText():        if self.cb_include_all_seq.isChecked():
-
-            cur = self.connection.cursor()
-            # check max id length
-            max_id_len = 0
-            sql = "SELECT MAX(length(id) + length(description)) AS max_id_descr_len FROM sequences"
-            cur.execute(sql)
-            max_id_len = int(cur.fetchone()['max_id_descr_len'])
-
+        if self.pte_sql.toPlainText():
 
             self.tw.setRowCount(0)
             self.tw.setColumnCount(len(FIELDS_NAME))
@@ -245,115 +231,84 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         if not file_name:
             return
         with open(file_name, "w") as f_out:
-
-            if self.cb_include_all_seq.isChecked():
-                sql = "SELECT id, aligned_target_sequence FROM sequences ORDER BY id"
-                cur = self.connection.cursor()
-                cur.execute(sql)
-                for row in cur.fetchall():
-                    print(f">{row['id']}\n{row['aligned_target_sequence']}", file=f_out)
-
-            else:
-
-                for row in range(self.tw.rowCount()):
-                    for col, field_name in enumerate(FIELDS_NAME):
-                        if field_name == "accession":
-                            print(">" + self.tw.item(row, col).text(), file=f_out)
-                        if field_name == "aligned_target_sequence":
-                            seq = self.tw.item(row, col).text().replace("-", "")
-                            print(seq, file=f_out)
+            for row in range(self.tw.rowCount()):
+                for col, field_name in enumerate(FIELDS_NAME):
+                    if field_name == "accession":
+                        print(">" + self.tw.item(row, col).text(), file=f_out)
+                    if field_name == "aligned_target_sequence":
+                        seq = self.tw.item(row, col).text().replace("-", "")
+                        print(seq, file=f_out)
 
 
     def save_tsv(self):
         """
-        save sequences in TSV format (same as input)
+        save selected results in TSV format (same as input)
         """
 
         file_name, _ = QFileDialog.getSaveFileName(self, "Save file TSV", "")
         if not file_name:
             return
-
         with open(file_name, "w") as f_out:
-
-            if self.cb_include_all_seq.isChecked():
-                sql = "SELECT * FROM sequences ORDER BY id"
-                cur = self.connection.cursor()
-                cur.execute(sql)
-                for row in cur.fetchall():
-                    print("\t".join([str(x) for x in row]), file=f_out)
-            else:
-                for row in range(self.tw.rowCount()):
-                    for col, _ in enumerate(FIELDS_NAME):
-                        print(self.tw.item(row, col).text(), file=f_out, end="\t")
-                    print(file=f_out, end="\n")
+            for row in range(self.tw.rowCount()):
+                for col, _ in enumerate(FIELDS_NAME):
+                    print(self.tw.item(row, col).text(), file=f_out, end="\t")
+                print(file=f_out, end="\n")
 
 
     def save_fbs(self):
-        """
-        Export sequences in query anchored format
-        """
 
         # all uniq aligned query
         file_name, _ = QFileDialog.getSaveFileName(self, "Save file FBS", "")
         if not file_name:
             return
 
+        aligned_query_list = []
+        for row in range(self.tw.rowCount()):
+            if aligned_query_list == []:
+                aligned_query_list.append(self.tw.item(row, 7).text())
+            else:
+                flag_in = False
+                for x in aligned_query_list:
+                    if self.tw.item(row, 7).text() in x:
+                        flag_in = True
+                        break
+                if not flag_in:
+                    aligned_query_list.append(self.tw.item(row, 7).text()) 
 
-        if self.cb_include_all_seq.isChecked():
+        with open(file_name, "w") as f_out:
+            out = ""
+            for aligned_query in aligned_query_list:
+                out += "query" + (" " *  25) + aligned_query + "\n"
+                for row in range(self.tw.rowCount()):
 
-            cur = self.connection.cursor()
-            # check max id length
-            max_id_len = 0
-            sql = "SELECT MAX(length(id) + length(description)) AS max_id_descr_len FROM sequences"
-            cur.execute(sql)
-            max_id_len = int(cur.fetchone()['max_id_descr_len'])
-            print(f"{max_id_len=}")
+                    # check aligned query
+                    if self.tw.item(row, 7).text() not in aligned_query:
+                        continue
 
-            
-            with open(file_name, "w") as f_out:
-                out = ""
+                    for col, _ in enumerate(FIELDS_NAME):
 
-                sql = "select distinct aligned_query_sequence from sequences order by score desc"
-                cur.execute(sql)
+                        if col == 0:
+                            id = self.tw.item(row, col).text()
+                            while len(id) < 30:
+                                id += ' '
+                            out += id
 
+                        if col == 8: # align target sequence
+                            ats = ""
+                            aligned_target_sequence = self.tw.item(row, col).text()
+                            aligned_target_sequence = (" " * aligned_query.index(self.tw.item(row, 7).text())) + aligned_target_sequence
+                            for nq, nt in zip(aligned_query, aligned_target_sequence):
+                                if nq == nt:
+                                    ats += "."
+                                elif nt == " ":
+                                    ats += " "
+                                else:
+                                    ats += nt
 
-                connection2 = sqlite3.connect('1.sqlite')
-                connection2.row_factory = sqlite3.Row
-                cur2 = connection2.cursor()
-                count = 0
-                for row in cur.fetchall():
-                    print(count)
-                    count += 1
-                    app.processEvents()
-                    out += "query" + (" " *  (max_id_len + 5 - 5)) + row['aligned_query_sequence'] + "\n"
+                            out += ats + "\n"
+                out += "\n\n"
 
-                    # print(f"select id, description, aligned_query_sequence, aligned_target_sequence from sequences where aligned_query_sequence like '%{row['aligned_query_sequence']}%'")
-
-                    cur2.execute(f"select id, description, aligned_query_sequence, aligned_target_sequence from sequences where aligned_query_sequence like '%{row['aligned_query_sequence']}%'")
-                    for row2 in cur2.fetchall():
-
-                        id_descr = row2['id'] + " " + row2['description']
-                        while len(id_descr) < max_id_len + 5:
-                            id_descr += " "
-                        out += id_descr
-
-                        ats = ""
-                        aligned_target_sequence = row2["aligned_target_sequence"]
-                        aligned_target_sequence = (" " * row2['aligned_query_sequence'].index(row['aligned_query_sequence'])) + aligned_target_sequence
-                        for nq, nt in zip(row['aligned_query_sequence'], aligned_target_sequence):
-                            if nq == nt:
-                                ats += "."
-                            elif nt == " ":
-                                ats += " "
-                            else:
-                                ats += nt
-
-                        out += ats + "\n"
-
-                    out += "\n\n"
-
-                f_out.write(out)
-            
+            f_out.write(out) 
 
 
 
@@ -367,5 +322,5 @@ if __name__ == "__main__":
     program.show()
     program.raise_()
     sys.exit(app.exec_())
-
+    
 

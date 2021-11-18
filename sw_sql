@@ -272,8 +272,8 @@ if __name__ == '__main__':
     parser.add_argument("--min-align-len", action='store', dest="min_align_len", type=float, help="Minimal length of alignment (0-100%% of query length)")
     parser.add_argument("--min-identity", action='store', dest="min_identity", type=float, help="Minimal identity (0-100%%)")
 
-    MIN_ALIGN_LENGTH = 0.5
-    MIN_IDENTITY = 0.5
+    MIN_ALIGN_LENGTH: float = 0.5
+    MIN_IDENTITY: float = 0.5
 
     args = parser.parse_args()
 
@@ -305,8 +305,8 @@ if __name__ == '__main__':
                 sys.exit(1)
 
             # check DB format
-            db_format = ""
-            list_of_files = False
+            db_format: str = ""
+            list_of_files: bool = False
             with open(target_file, "r") as f:
                 content = f.read(4)
                 if content.startswith(">"):

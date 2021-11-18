@@ -253,7 +253,6 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 conditions = ""
             q = QtSql.QSqlQuery(f"SELECT id, frame, aligned_target_sequence FROM sequences {conditions} ORDER BY id")
             if q.exec_():
-                q.first()
                 while q.next():
                     print(f">{q.value('id')}_{q.value('frame')}\n{q.value('aligned_target_sequence').replace('-', '')}", file=f_out)
 
@@ -353,35 +352,48 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 count += 1
                 if conditions:
                     conditions2 = " AND " + conditions.replace("WHERE", "")
+                else:
+                    conditions2 = ""
+
+                '''
+                query2 = (f"SELECT id, description, frame, aligned_query_sequence, aligned_target_sequence FROM sequences "
+                                      f"where aligned_query_sequence like '%{q.value('aligned_query_sequence')}%' {conditions2} "
+                                      "ORDER BY id")
+                '''
+
+                query2 = (f"SELECT id, description, frame, aligned_query_sequence, aligned_target_sequence FROM sequences "
+                                      f"where aligned_query_sequence = '{q.value('aligned_query_sequence')}' {conditions2} "
+                                      "ORDER BY id")
+                                    
+
+                q2 = QtSql.QSqlQuery(query2)
+
+                if not q2.exec_():
+                    self.statusBar().showMessage(f"SQL error in q2")
 
                 id_dict = {}
                 cleaned_seq = {}
-
-                q2 = QtSql.QSqlQuery((f"SELECT id, description, frame, aligned_query_sequence, aligned_target_sequence FROM sequences "
-                                      f"where aligned_query_sequence like '%{q.value('aligned_query_sequence')}%' {conditions2} "
-                                      "ORDER BY id")
-                                    )
-                if not q2.exec_():
-                    self.statusBar().showMessage(f"SQL error in q2")
 
                 while q2.next():
 
                     id_descr = f'{q2.value("id")} {q2.value("description")} {q2.value("frame")}'
                     aligned_target_sequence = q2.value("aligned_target_sequence")
+
                     if aligned_target_sequence not in id_dict:
                         id_dict[aligned_target_sequence] = [id_descr]
                     else:
                         id_dict[aligned_target_sequence].append(id_descr)
 
                     
+                    '''
                     while len(id_descr) < max_id_len + 5:
                         id_descr += " "
-                    #out += id_descr
-
-                    ats = ""
+                    out += id_descr
+                    '''
 
                     formated_aligned_target_sequence = (" " * q2.value("aligned_query_sequence").index(q.value("aligned_query_sequence"))) + aligned_target_sequence
 
+                    ats = ""
                     for nq, nt in zip(q.value("aligned_query_sequence"), formated_aligned_target_sequence):
                         if nq == nt:
                             ats += "."
@@ -392,7 +404,9 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
                     cleaned_seq[aligned_target_sequence] = ats
 
-                    #out += ats + "\n"
+                    '''
+                    out += ats + "\n"
+                    '''
 
                 for seq in id_dict:
                     if flag_group:
