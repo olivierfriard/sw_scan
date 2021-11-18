@@ -51,7 +51,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
         self.setupUi(self)
 
-        self.setWindowTitle("SW Scan")
+        self.setWindowTitle(f"SW Scan v.{__version__}")
 
         self.initialize_var()
 
