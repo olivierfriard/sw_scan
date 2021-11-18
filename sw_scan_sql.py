@@ -287,10 +287,24 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.statusBar().showMessage(f"Saving TSV file done")
 
 
+    def message_dialog(self, title, text, buttons):
+        message = QMessageBox()
+        message.setWindowTitle(title)
+        message.setText(text)
+        message.setIcon(QMessageBox.Question)
+        for button in buttons:
+            message.addButton(button, QMessageBox.YesRole)
+
+        message.exec_()
+        return message.clickedButton().text()
+
+
     def save_fbs(self):
         """
         Export sequences in query anchored format
         """
+
+        flag_group = (self.message_dialog("SW Scan", "Group identical sequences?", ["Yes", "No"]) == "Yes")
 
         # all uniq aligned query
         file_name, _ = QFileDialog.getSaveFileName(self, "Save file FBS", "")
@@ -314,6 +328,13 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         max_id_len = q.value('max_id_descr_len')
         app.processEvents()
 
+
+        q = QtSql.QSqlQuery(f"SELECT count(distinct aligned_query_sequence) as n FROM sequences {conditions}")
+        if  q.exec_():
+            q.first()
+            n_distinct_aligned_query = q.value('n')
+
+
         with open(file_name, "w") as f_out:
 
             q = QtSql.QSqlQuery(f"SELECT distinct aligned_query_sequence FROM sequences {conditions} ORDER BY score desc")
@@ -322,17 +343,20 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
             count = 0
             out = ""
+            count_group = 1
             while q.next():
 
+                self.statusBar().showMessage(f"Saving FBS file {count} / {n_distinct_aligned_query}")
                 app.processEvents()
+
                 out += "query" + (" " *  (max_id_len + 5 - 5)) + q.value('aligned_query_sequence') + "\n"
                 count += 1
                 if conditions:
                     conditions2 = " AND " + conditions.replace("WHERE", "")
 
-                #print(f"select id, description, frame, aligned_query_sequence, aligned_target_sequence from sequences where aligned_query_sequence like '%{q.value('aligned_query_sequence')}%' {conditions2}")
+                id_dict = {}
+                cleaned_seq = {}
 
-                aligned_target_sequence_set = {}
                 q2 = QtSql.QSqlQuery((f"SELECT id, description, frame, aligned_query_sequence, aligned_target_sequence FROM sequences "
                                       f"where aligned_query_sequence like '%{q.value('aligned_query_sequence')}%' {conditions2} "
                                       "ORDER BY id")
@@ -342,22 +366,22 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
                 while q2.next():
 
-                    aligned_target_sequence = q2.value("aligned_target_sequence")
-
-                    if aligned_target_sequence in aligned_target_sequence_set:
-                        continue
-                    else:
-                        aligned_target_sequence_set = set(list(aligned_target_sequence_set) + [aligned_target_sequence])
-
-
                     id_descr = f'{q2.value("id")} {q2.value("description")} {q2.value("frame")}'
+                    aligned_target_sequence = q2.value("aligned_target_sequence")
+                    if aligned_target_sequence not in id_dict:
+                        id_dict[aligned_target_sequence] = [id_descr]
+                    else:
+                        id_dict[aligned_target_sequence].append(id_descr)
+
+                    
                     while len(id_descr) < max_id_len + 5:
                         id_descr += " "
-                    out += id_descr
+                    #out += id_descr
 
                     ats = ""
 
                     formated_aligned_target_sequence = (" " * q2.value("aligned_query_sequence").index(q.value("aligned_query_sequence"))) + aligned_target_sequence
+
                     for nq, nt in zip(q.value("aligned_query_sequence"), formated_aligned_target_sequence):
                         if nq == nt:
                             ats += "."
@@ -366,7 +390,32 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                         else:
                             ats += nt
 
-                    out += ats + "\n"
+                    cleaned_seq[aligned_target_sequence] = ats
+
+                    #out += ats + "\n"
+
+                for seq in id_dict:
+                    if flag_group:
+                        if len(id_dict[seq]) > 1:
+                            id_descr = f"group #{count_group} ({len(id_dict[seq])} seq)"
+                            count_group += 1
+                        else:
+                            id_descr = id_dict[seq][0]
+
+                        while len(id_descr) < max_id_len + 5:
+                            id_descr += " "
+
+                        out += id_descr
+
+                        out += cleaned_seq[seq] + "\n"
+
+                    else:
+                        for id in id_dict[seq]:
+                            id_descr = id
+                            while len(id_descr) < max_id_len + 5:
+                                id_descr += " "
+                            out += id_descr
+                            out += cleaned_seq[seq] + "\n"
 
                 out += "\n\n"
 

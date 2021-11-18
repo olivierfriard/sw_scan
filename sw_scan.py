@@ -309,7 +309,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             max_id_len = int(cur.fetchone()['max_id_descr_len'])
             print(f"{max_id_len=}")
 
-            '''
+            
             with open(file_name, "w") as f_out:
                 out = ""
 
@@ -353,7 +353,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                     out += "\n\n"
 
                 f_out.write(out)
-            '''
+            
 
 
 
