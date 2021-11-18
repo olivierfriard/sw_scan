@@ -16,6 +16,7 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 import argparse
 import pathlib as pl
+import sqlite3
 
 MIN_ALIGN_LENGTH_DEFAULT = 0.5
 MIN_IDENTITY_DEFAULT = 0.5
@@ -193,26 +194,43 @@ def main():
                 results = align_mp(seq_list)
 
                 for result in results:
-                    # print(result, file=output_file, end="")
-                    final_results.extend(result)
-
+                    for r in result:
+                        cursor.execute("INSERT INTO sequences  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", r)
+                connection.commit()
                 seq_list = []
+
 
         # check if seq_list is not empty
         if seq_list:
             results = align_mp(seq_list)
             for result in results:
-                final_results.extend(result)
+                for r in result:
+                    cursor.execute("INSERT INTO sequences  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", r)
+            connection.commit()
+
+
+                #final_results.extend(result)
         return seq_number
 
+    connection = sqlite3.connect(output_file)
+    connection.row_factory = sqlite3.Row
+    cursor = connection.cursor()
+    cursor.execute(("create table sequences "
+                    "(id text, description text, frame text, identity float, score float, "
+                    " align_length int, target_length int, aligned_query_sequence text, aligned_target_sequence text, "
+                    "query_begin int, query_end int, target_begin int, target_end_optimal int)"
+                   ))
+    connection.commit()
 
     tot_seq_nb = 0
     final_results = []
 
     # header
+    '''
     print(("id\tdescription\tframe\tidentity\tscore\talign_length\ttarget_length\t"
            "aligned_query_sequence\taligned_target_sequence\tquery_begin\tquery_end\t"
            "target_begin\ttarget_end_optimal"), file=output_file)
+    '''
 
     if not list_of_files:
         tot_seq_nb += align_file(target_file)
@@ -223,7 +241,7 @@ def main():
                 if target_file2:
                     tot_seq_nb += align_file(target_file2)
 
-
+    '''
     # sort by score descending
     final_results.sort(key=lambda x:x[4], reverse=True)
 
@@ -231,6 +249,7 @@ def main():
         print("\t".join([str(x) for x in result]), file=output_file)
 
     output_file.close()
+    '''
 
     print(f"{tot_seq_nb} sequence(s) found in database.", file=sys.stderr)
 
@@ -253,8 +272,8 @@ if __name__ == '__main__':
     parser.add_argument("--min-align-len", action='store', dest="min_align_len", type=float, help="Minimal length of alignment (0-100%% of query length)")
     parser.add_argument("--min-identity", action='store', dest="min_identity", type=float, help="Minimal identity (0-100%%)")
 
-    MIN_ALIGN_LENGTH = 0.5
-    MIN_IDENTITY = 0.5
+    MIN_ALIGN_LENGTH: float = 0.5
+    MIN_IDENTITY: float = 0.5
 
     args = parser.parse_args()
 
@@ -286,8 +305,8 @@ if __name__ == '__main__':
                 sys.exit(1)
 
             # check DB format
-            db_format = ""
-            list_of_files = False
+            db_format: str = ""
+            list_of_files: bool = False
             with open(target_file, "r") as f:
                 content = f.read(4)
                 if content.startswith(">"):
@@ -319,8 +338,6 @@ if __name__ == '__main__':
                     print('Database format not recognized! Use FASTA or EMBL formats', file=sys.stderr)
                     sys.exit(1)
 
-                # print(f"list of files {db_format}")
-
 
 
     if not args.cpu:
@@ -331,7 +348,7 @@ if __name__ == '__main__':
     if args.output:
         if pl.Path(args.output).is_file():
             os.remove(args.output)
-        output_file = open(args.output, "a")
+        output_file = args.output
     else:
         output_file = sys.stdout
 
