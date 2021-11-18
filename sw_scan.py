@@ -119,6 +119,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.db = QtSql.QSqlDatabase.addDatabase("QSQLITE")
         self.db.setDatabaseName(self.file_name)
         if not self.db.open():
+            print("Error opening the file")
             sys.exit(-1)
 
         self.model = QtSql.QSqlTableModel()
@@ -213,27 +214,23 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
 
     def run_query(self):
+        """
+        Run query defined by user
+        """
         if self.pte_sql.toPlainText():
 
-            self.tw.setRowCount(0)
-            self.tw.setColumnCount(len(FIELDS_NAME))
-            self.tw.setHorizontalHeaderLabels(FIELDS_NAME)
+            self.model.setFilter(self.pte_sql.toPlainText())
+            self.model.select()
 
-            cur = self.connection.cursor()
-            try:
-                cur.execute(self.pte_sql.toPlainText())
-            except sqlite3.OperationalError:
-                self.statusBar().showMessage("Query error!")
-                return
+            q = QtSql.QSqlQuery(f"SELECT count(*) as n FROM sequences WHERE {self.pte_sql.toPlainText()}")
+            if q.exec_():
+                q.first()
+                self.statusBar().showMessage(f"{q.value('n'):,} sequence(s) filtered")
 
-            for row in cur.fetchall():
-                idx = 0
-                self.tw.setRowCount(self.tw.rowCount() + 1)
-                for r in row:
-                    self.tw.setItem(self.tw.rowCount() - 1, idx, QTableWidgetItem(str(r)))
-                    idx += 1
 
-            self.statusBar().showMessage(f"{self.tw.rowCount()} sequences found")
+        else:
+
+            self.statusBar().showMessage(f"No query to run")
 
 
     def save_fasta(self):
