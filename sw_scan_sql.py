@@ -336,7 +336,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
         with open(file_name, "w") as f_out:
 
-            q = QtSql.QSqlQuery(f"SELECT distinct aligned_query_sequence FROM sequences {conditions} ORDER BY score desc")
+            q = QtSql.QSqlQuery(f"SELECT distinct aligned_query_sequence FROM sequences {conditions} ORDER BY LENGTH(aligned_query_sequence) DESC, score DESC")
             if not q.exec_():
                 self.statusBar().showMessage(f"SQL error")
 
@@ -384,12 +384,6 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                     else:
                         id_dict[aligned_target_sequence].append(id_descr)
 
-                    
-                    '''
-                    while len(id_descr) < max_id_len + 5:
-                        id_descr += " "
-                    out += id_descr
-                    '''
 
                     formated_aligned_target_sequence = (" " * q2.value("aligned_query_sequence").index(q.value("aligned_query_sequence"))) + aligned_target_sequence
 
@@ -404,14 +398,10 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
                     cleaned_seq[aligned_target_sequence] = ats
 
-                    '''
-                    out += ats + "\n"
-                    '''
-
                 for seq in id_dict:
                     if flag_group:
                         if len(id_dict[seq]) > 1:
-                            id_descr = f"group #{count_group} ({len(id_dict[seq])} seq)"
+                            id_descr = f"group #{count_group} ({len(id_dict[seq]):,} seq)"
                             count_group += 1
                         else:
                             id_descr = id_dict[seq][0]
