@@ -197,9 +197,9 @@ def main():
 
             result1 = align((str(record.seq), record.id, record.description))
             print(result1)
-
-            cursor.execute("INSERT INTO sequences  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", result1[0])
-            connection.commit()
+            if result1:
+                cursor.execute("INSERT INTO sequences  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", result1[0])
+                connection.commit()
 
         return seq_number
 
