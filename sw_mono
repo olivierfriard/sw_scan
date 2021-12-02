@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 
 """
-align a query sequence with the smith-waterman algorithm (skbio) with sequences from a multi fasta file or EMBL format (see ENA)
+Align a query sequence with the smith-waterman algorithm (skbio) with sequences from a multi fasta file or EMBL format (see ENA)
 (c) Olivier Friard
+
+version without multiprocessing
+
 """
 
 __version__ = '6'
 __version_date__ = "2021-11-16"
 
 import os
-from multiprocessing import Pool, cpu_count
+#from multiprocessing import Pool, cpu_count
 from skbio.alignment import StripedSmithWaterman
 import sys
 from Bio import SeqIO
@@ -51,7 +54,7 @@ def output(id, description, alignment):
     ]
 
 
-def align(input):  # target_seq, target_id, target_description):
+def align(input: list) -> list:  # target_seq, target_id, target_description):
 
     target_seq, target_id, target_description = input
     result = []
@@ -184,32 +187,16 @@ def main():
 
         count = 0
         seq_number = 0
-        seq_list = []
         for record in SeqIO.parse(target_file, db_format):
             seq_number += 1
             count += 1
-            seq_list.append((str(record.seq), record.id, record.description))
-            if count == MP_MAX_SEQUENCES_NUMBER:
-                count = 0
-                results = align_mp(seq_list)
+            # seq_list.append((str(record.seq), record.id, record.description))
 
-                for result in results:
-                    for r in result:
-                        cursor.execute("INSERT INTO sequences  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", r)
-                connection.commit()
-                seq_list = []
+            result = align((str(record.seq), record.id, record.description))
 
-
-        # check if seq_list is not empty
-        if seq_list:
-            results = align_mp(seq_list)
-            for result in results:
-                for r in result:
-                    cursor.execute("INSERT INTO sequences  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", r)
+            cursor.execute("INSERT INTO sequences  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", result)
             connection.commit()
 
-
-                #final_results.extend(result)
         return seq_number
 
     connection = sqlite3.connect(output_file)
@@ -339,11 +326,12 @@ if __name__ == '__main__':
                     sys.exit(1)
 
 
-
+    '''
     if not args.cpu:
         n_cpu = cpu_count()
     else:
         n_cpu = int(args.cpu)
+    '''
 
     if args.output:
         if pl.Path(args.output).is_file():
