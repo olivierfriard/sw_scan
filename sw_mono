@@ -193,6 +193,7 @@ def main():
             # seq_list.append((str(record.seq), record.id, record.description))
 
             result = align((str(record.seq), record.id, record.description))
+            print(result)
 
             cursor.execute("INSERT INTO sequences  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", result)
             connection.commit()
