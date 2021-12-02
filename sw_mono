@@ -192,10 +192,10 @@ def main():
             count += 1
             # seq_list.append((str(record.seq), record.id, record.description))
 
-            result = align((str(record.seq), record.id, record.description))
-            print(result)
+            result1 = align((str(record.seq), record.id, record.description))
+            print(result1)
 
-            cursor.execute("INSERT INTO sequences  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", result[0])
+            cursor.execute("INSERT INTO sequences  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", result1[0])
             connection.commit()
 
         return seq_number
