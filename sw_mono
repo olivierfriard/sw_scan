@@ -166,6 +166,8 @@ def align(input: list) -> list:  # target_seq, target_id, target_description):
         else:
             result.append(output(target_id, target_description, alignment_r))
 
+    print("func", result)
+
     return result
 
 
