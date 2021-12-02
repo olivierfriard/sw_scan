@@ -191,6 +191,7 @@ def main():
             seq_number += 1
             count += 1
             # seq_list.append((str(record.seq), record.id, record.description))
+            print(record.id)
 
             result1 = align((str(record.seq), record.id, record.description))
             print(result1)
