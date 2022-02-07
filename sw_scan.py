@@ -25,23 +25,9 @@ from PyQt5 import QtCore
 from sw_scan_ui import Ui_MainWindow
 import sys
 
-__version__ = '4'
-__version_date__ = "2021-11-17"
+__version__ = '5'
+__version_date__ = "2022-02-07"
 
-'''
-class Worker(QObject):
-    finished = pyqtSignal()
-
-    def run(self):
-        print("running")
-        q = QtSql.QSqlQuery(self.query)
-        if q.exec_():
-            q.first()
-            print(q.value('n'))
-            #self.statusBar().showMessage(f"{q.value('n'):,} sequence(s) filtered")
-
-        self.finished.emit()
-'''
 
 class SW_Scan(QMainWindow, Ui_MainWindow):
 
@@ -158,8 +144,6 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         identity_pc = float(self.le_identity.text()) if self.le_identity.text() else 0
         min_align_length = int(self.le_align_length.text()) if self.le_align_length.text() else 0
 
-        #sql1 = "SELECT * FROM sequences WHERE "
-
         self.sql2 = ""
         if id:
             self.sql2 += f" `id` LIKE '%{id}%' "
@@ -187,7 +171,8 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         else:
             self.sql = ""
 
-        self.pte_sql.setPlainText(self.sql)
+        self.pte_sql.setPlainText(self.sql2)
+        self.le_order.setText(SEQ_ORDER)
 
         self.model.setFilter(self.sql)
         self.model.select()
@@ -197,25 +182,10 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             q.first()
             self.statusBar().showMessage(f"{q.value('n'):,} sequence(s) filtered")
 
-        '''
-        self.thread = QThread()
-        self.worker = Worker()
-        self.worker.db = self.db
-        self.worker.query = f"SELECT count(*) as n FROM sequences WHERE {sql2}"
-        self.worker.moveToThread(self.thread)
-        self.thread.started.connect(self.worker.run)
-
-        #self.worker.finished.connect(self.thread.quit)
-
-        self.worker.finished.connect(lambda: self.statusBar().showMessage("OK"))
-        self.thread.start()
-        '''
-
-
 
     def run_query(self):
         """
-        Run query defined by user
+        Run SQL query defined by user
         """
         if self.pte_sql.toPlainText():
 
@@ -227,8 +197,11 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 q.first()
                 self.statusBar().showMessage(f"{q.value('n'):,} sequence(s) filtered")
 
+            self.sql2 = self.pte_sql.toPlainText()
 
         else:
+
+            self.sql2 = ""
 
             self.statusBar().showMessage(f"No query to run")
 
@@ -246,7 +219,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 conditions = f"WHERE {self.sql2}"
             else:
                 conditions = ""
-            q = QtSql.QSqlQuery(f"SELECT id, frame, aligned_target_sequence FROM sequences {conditions} ORDER BY id, frame")
+            q = QtSql.QSqlQuery(f"SELECT id, frame, aligned_target_sequence FROM sequences {conditions}  {self.le_order.text()}")
             if q.exec_():
                 while q.next():
                     print(f">{q.value('id')}_{q.value('frame')}\n{q.value('aligned_target_sequence').replace('-', '')}", file=f_out)
@@ -272,7 +245,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 conditions = ""
 
 
-            q = QtSql.QSqlQuery(f"SELECT * FROM sequences {conditions} ORDER BY id, frame")
+            q = QtSql.QSqlQuery(f"SELECT * FROM sequences {conditions} {self.le_order.text()}")
             if q.exec_():
                 while q.next():
                     app.processEvents()
@@ -308,12 +281,14 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.statusBar().showMessage(f"Saving FBS file")
         app.processEvents()
 
+        print(f"{self.sql2=}")
+
         if self.sql2:
             conditions = f"WHERE {self.sql2}"
         else:
             conditions = ""
 
-
+        # get max of id and description
         q = QtSql.QSqlQuery(f"SELECT MAX(length(id) + length(description)) AS max_id_descr_len FROM sequences {conditions}")
         if not q.exec_():
             self.statusBar().showMessage(f"SQL error")
@@ -359,7 +334,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 query2 = (f"SELECT id, description, frame, aligned_query_sequence, aligned_target_sequence FROM sequences "
                                       f"where aligned_query_sequence = '{q.value('aligned_query_sequence')}' {conditions2} "
                                       "ORDER BY score DESC, id")
-                                    
+
 
                 q2 = QtSql.QSqlQuery(query2)
 
