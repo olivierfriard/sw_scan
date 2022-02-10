@@ -2,13 +2,17 @@
 
 CLUSTAL Cleaner
 
-Clear the CLUSTAL output and position the forward and reverse primers
-(c) Olivier Friard
+Clear the CLUSTAL output and position sequences from a FASTA file
+
+-g group the sequences that are identical
+
+
+(c) Olivier Friard 2021-2022
 
 """
 
-__version__ = '3'
-__version_date__ = "2021-10-19"
+__version__ = "4"
+__version_date__ = "2022-02-10"
 
 ROW_HEADER_ID = 5
 
@@ -24,19 +28,18 @@ parser = argparse.ArgumentParser(description='Clustal Cleaner',)
 
 parser.add_argument('-i', action="store", dest="input")
 parser.add_argument('-m', action="store", dest="model")
-parser.add_argument('-s', action="store", dest="sequence_file")
-parser.add_argument('-g', action="store_true", dest="group")
+parser.add_argument("-s", action="store", dest="sequence_file")
+parser.add_argument("-g", action="store_true", dest="group")
+parser.add_argument("--stars", action="store_true", dest="stars")
 
 args = parser.parse_args()
 
-
 if not args.model:
-    print('Model sequence ID not specified!', file=sys.stderr)
+    print("Model sequence ID not specified!", file=sys.stderr)
     sys.exit(1)
 
-
 if not args.input:
-    print('Input file not specified!', file=sys.stderr)
+    print("Input file not specified!", file=sys.stderr)
     sys.exit(1)
 
 if not pl.Path(args.input).is_file:
@@ -44,52 +47,62 @@ if not pl.Path(args.input).is_file:
     sys.exit(2)
 
 
-# read sequences from alignment
-align = AlignIO.read(args.input, "clustal")
 
-ref_seq = ""
-ref_id = ""
-max_len_id = 0
-group = {}
 
-sequences = {}
-for seq in align:
+def read_seq_from_clustal(file_path: str):
+    """
+    read sequences from CLUSTAL alignment whith BioPython AlignIO.read function
+    """
 
-    if seq.id.upper() == args.model.upper():
-        ref_seq = str(seq.seq)
-        ref_id = seq.id
-        max_len_id = max(max_len_id, len(seq.id))
-        continue
+    align = AlignIO.read(file_path, "clustal")
 
-    if args.group:
-        for seq2 in sequences:
-            if str(seq.seq) == sequences[seq2]:
-                group[seq2] += 1
-                break
+    ref_seq = ""
+    ref_id = ""
+    max_len_id = 0
+    group = {}
+
+    sequences = {}
+    for seq in align:
+
+        if seq.id.upper() == args.model.upper():
+            ref_seq = str(seq.seq)
+            ref_id = seq.id
+            max_len_id = max(max_len_id, len(seq.id))
+            continue
+
+        if args.group:
+            for seq2 in sequences:
+                if str(seq.seq) == sequences[seq2]:
+                    group[seq2] += 1
+                    break
+            else:
+                sequences[seq.id] = str(seq.seq)
+                group[seq.id] = 1
+                max_len_id = max(max_len_id, len(seq.id))
+
         else:
             sequences[seq.id] = str(seq.seq)
-            group[seq.id] = 1
             max_len_id = max(max_len_id, len(seq.id))
 
-    else:
-        sequences[seq.id] = str(seq.seq)
-        max_len_id = max(max_len_id, len(seq.id))
+    # modify seq id for group
+    if args.group:
+        count = 1
+        for seq_id in group:
+            if group[seq_id] > 1:
+                sequences[f"group #{count} ({group[seq_id]} seq.)"] = sequences[seq_id]
+                del sequences[seq_id]
+                count += 1
+        # update max_len_id
+        max_len_id = max([len(id) for id in sequences])
 
-# modify seq id for group
-if args.group:
-    count = 1
-    for seq_id in group:
-        if group[seq_id] > 1:
-            sequences[f"group #{count} ({group[seq_id]} seq.)"] = sequences[seq_id]
-            del sequences[seq_id]
-            count += 1
-    # update max_len_id
-    max_len_id = max([len(id) for id in sequences])
+    return sequences, ref_seq, ref_id, max_len_id
+
+
+sequences, ref_seq, ref_id, max_len_id = read_seq_from_clustal(args.input)
 
 if not ref_id:
     print(f"Model sequence ID not found in alignment!\nID list:\n{' '.join(sequences.keys())}", file=sys.stderr)
     sys.exit(1)
-
 
 # verif seq len
 if len(set([len(sequences[k]) for k in sequences])) != 1:
@@ -143,7 +156,6 @@ SPAN_OPEN = {"": '<span style="background-color: yellow">',
 
 print("<html><head></head><body><pre>")
 
-
 # header
 header = " " * [len(sequences[k]) for k in sequences][0]
 header_out = header
@@ -158,7 +170,6 @@ if args.sequence_file:
     print(" " * (max_len_id + ROW_HEADER_ID), end="")
     print(pre_header)
 
-
     # position
     for seq_id in seq_idx:
         header_out = header_out[0:seq_idx[seq_id]] + seq2position[seq_id]  + header[seq_idx[seq_id] + len(seq2position[seq_id]):]
@@ -167,10 +178,8 @@ if args.sequence_file:
     for seq_id in seq_idx:
         header_out = header_out.replace(seq2position[seq_id], SPAN_OPEN[polarity[seq_id]] + seq2position[seq_id] + SPAN_CLOSE)
 
-
 print(" " * (max_len_id + ROW_HEADER_ID), end="")
 print(header_out)
-
 
 # reference sequence
 print(ref_id, end="")
@@ -183,8 +192,13 @@ if args.sequence_file:
 
 print(ref_seq_out)
 
+consensus = []
 
 for id in sequences:
+
+    if not consensus:
+        consensus = list(sequences[id])
+
     seq = sequences[id]
 
     cleaned_seq = ""
@@ -193,6 +207,11 @@ for id in sequences:
             cleaned_seq += "."
         else:
             cleaned_seq += nt
+
+        # *
+        if nt != consensus[idx]:
+            consensus[idx] = " "
+
 
     if args.sequence_file:
         target = {}
@@ -223,5 +242,15 @@ for id in sequences:
             count += 1
 
     print(output)
+
+# print *
+if args.stars:
+    print(" " * (max_len_id  + ROW_HEADER_ID), end="")
+    for c in consensus:
+        if c == " ":
+            print(c, end="")
+        else:
+            print("*", end="")
+    print()
 
 print("</pre></body></html>")
