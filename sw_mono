@@ -251,9 +251,9 @@ def main():
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(prog="SW",
+    parser = argparse.ArgumentParser(prog="SW (TSV output)",
                                      description="Alignment of a sequence against database with the Smith-Waterman algorithm.",
-                                     usage=("sw.py -q QUERY_PATH -t TARGET_PATH -c N_CORES -o OUTPUT_PATH"
+                                     usage=("sw.py -q QUERY_PATH -t TARGET_PATH -o OUTPUT_PATH"
                                             "\nor:\n"
                                             "cat my_database.dtb | sw -q QUERY_PATH -t - -f DB_FORMAT -c N_CORES -o OUTPUT_PATH"
                                            )
@@ -261,7 +261,7 @@ if __name__ == '__main__':
     parser.add_argument("-q", "--query", action="store", dest="query", type=str, help="Path of the query file (FASTA format)")
     parser.add_argument("-t", "--target", action='store', dest="target", type=str, help="Path of the target sequences (FASTA format)")
     parser.add_argument("-f", "--db-format", action='store', dest="db_format", type=str, help="Format of the database (embl or fasta), only for stdin")
-    parser.add_argument("-c", "--cpu", action="store", dest="cpu", default=16, type=int, help="Set number of CPU/cores to use (default all)")
+    #parser.add_argument("-c", "--cpu", action="store", dest="cpu", default=16, type=int, help="Set number of CPU/cores to use (default all)")
     parser.add_argument("-o", "--output", action="store", dest="output", type=str, help="Set path for the output file")
     parser.add_argument("-v", "--version", action='version', version=f"%(prog)s v.{__version__} {__version_date__} (c) Olivier Friard 2021", help="Display the help")
     parser.add_argument("--min-align-len", action='store', dest="min_align_len", type=float, help="Minimal length of alignment (0-100%% of query length)")
