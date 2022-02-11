@@ -48,12 +48,12 @@ IUPAC_nt_codes = {'A': 'A',
 
 parser = argparse.ArgumentParser(description='Clustal Cleaner',)
 
-parser.add_argument('-i', action="store", dest="input")
-parser.add_argument('-m', action="store", dest="model")
-parser.add_argument("-s", action="store", dest="sequence_file")
-parser.add_argument("-g", action="store_true", dest="group")
-parser.add_argument("--stars", action="store_true", dest="stars")
-parser.add_argument("--consensus", action="store", dest="consensus")
+parser.add_argument('-i', action="store", dest="input", help="CLUSTAL alignment file")
+parser.add_argument('-m', action="store", dest="model", help="Reference sequence")
+parser.add_argument("-s", action="store", dest="sequence_file", help="FASTA file containing the sequences to position on the alignment")
+parser.add_argument("-g", action="store_true", dest="group", help="Group sequences when identical")
+parser.add_argument("--stars", action="store_true", dest="stars", help="Print stars when nucleotides are identical on column")
+parser.add_argument("--consensus", action="store", dest="consensus", help="Print a consensus sequence (in %)")
 
 args = parser.parse_args()
 
