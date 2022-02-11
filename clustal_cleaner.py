@@ -4,7 +4,10 @@ CLUSTAL Cleaner
 
 Clear the CLUSTAL output and position sequences from a FASTA file
 
--g group the sequences that are identical
+-g               group the sequences that are identical
+--consensus n    print a consensus sequence at n%
+--stars          print a star when all nucleotides are identical
+
 
 
 (c) Olivier Friard 2021-2022
@@ -14,15 +17,34 @@ Clear the CLUSTAL output and position sequences from a FASTA file
 __version__ = "4"
 __version_date__ = "2022-02-10"
 
-ROW_HEADER_ID = 5
+ROW_HEADER_ID = 10
 
 import sys
 import pathlib as pl
 import argparse
+import itertools
 
 from Bio import AlignIO
 from Bio.Seq import Seq
 from Bio import SeqIO
+
+IUPAC_nt_codes = {'A': 'A',
+                  'C': 'C',
+                  'G': 'G',
+                  'T': 'T',
+                  'AG': 'R',
+                  'CT': 'Y',
+                  'CG': 'S',
+                  'AT': 'W',
+                  'GT': 'K',
+                  'AC': 'M',
+                  'CGT': 'B',
+                  'AGT': 'D',
+                  'ACT': 'H',
+                  'ACG': 'V',
+                  'ACGT': 'N',
+                 }
+
 
 parser = argparse.ArgumentParser(description='Clustal Cleaner',)
 
@@ -31,6 +53,7 @@ parser.add_argument('-m', action="store", dest="model")
 parser.add_argument("-s", action="store", dest="sequence_file")
 parser.add_argument("-g", action="store_true", dest="group")
 parser.add_argument("--stars", action="store_true", dest="stars")
+parser.add_argument("--consensus", action="store", dest="consensus")
 
 args = parser.parse_args()
 
@@ -65,7 +88,7 @@ def read_seq_from_clustal(file_path: str):
     for seq in align:
 
         if seq.id.upper() == args.model.upper():
-            ref_seq = str(seq.seq)
+            ref_seq = str(seq.seq).upper()
             ref_id = seq.id
             max_len_id = max(max_len_id, len(seq.id))
             continue
@@ -76,12 +99,12 @@ def read_seq_from_clustal(file_path: str):
                     group[seq2] += 1
                     break
             else:
-                sequences[seq.id] = str(seq.seq)
+                sequences[seq.id] = str(seq.seq).upper()
                 group[seq.id] = 1
                 max_len_id = max(max_len_id, len(seq.id))
 
         else:
-            sequences[seq.id] = str(seq.seq)
+            sequences[seq.id] = str(seq.seq).upper()
             max_len_id = max(max_len_id, len(seq.id))
 
     # modify seq id for group
@@ -185,6 +208,16 @@ print(header_out)
 print(ref_id, end="")
 print(" " * (max_len_id - len(ref_id) + ROW_HEADER_ID), end="")
 
+
+stars = list(ref_seq)
+if args.consensus:
+    # initialize consensus with reference sequence
+    consensus = {}
+    for idx, nt in enumerate(ref_seq):
+        if idx not in consensus:
+            consensus[idx] = {}
+        consensus[idx][nt] = 1
+
 ref_seq_out = ref_seq
 if args.sequence_file:
     for seq_id in seq_idx:
@@ -192,12 +225,8 @@ if args.sequence_file:
 
 print(ref_seq_out)
 
-consensus = []
 
 for id in sequences:
-
-    if not consensus:
-        consensus = list(sequences[id])
 
     seq = sequences[id]
 
@@ -209,9 +238,18 @@ for id in sequences:
             cleaned_seq += nt
 
         # *
-        if nt != consensus[idx]:
-            consensus[idx] = " "
+        if args.stars:
+            if nt != stars[idx]:
+                stars[idx] = " "
 
+        # consensus
+        if args.consensus:
+            #if idx not in consensus:
+            #    consensus[idx] = {}
+            if nt not in consensus[idx]:
+                consensus[idx][nt] = 1
+            else:
+                consensus[idx][nt] += 1
 
     if args.sequence_file:
         target = {}
@@ -245,12 +283,52 @@ for id in sequences:
 
 # print *
 if args.stars:
+    print()
     print(" " * (max_len_id  + ROW_HEADER_ID), end="")
-    for c in consensus:
-        if c == " ":
-            print(c, end="")
+    for nt in stars:
+        if nt == " ":
+            print(nt, end="")
         else:
             print("*", end="")
     print()
+
+#print(consensus)
+
+if args.consensus:
+
+    print()
+    row_header = f"{args.consensus}%"
+    print(row_header, end="")
+
+    print(" " * (max_len_id - len(row_header)  + ROW_HEADER_ID), end="")
+
+    for idx in sorted(consensus.keys()):
+        total = sum([consensus[idx][k] for k in consensus[idx]])
+        #print(total)
+
+        for nt in consensus[idx]:
+            #print(consensus[idx][nt] / total)
+            #print(int(args.consensus) / 100)
+            if consensus[idx][nt] / total >= int(args.consensus) / 100:
+                print(nt, end="")
+                break
+        else:
+            # print degenerated nt
+            nt_list = list(consensus[idx])
+
+            for n in range(1, 4 + 1):
+                for c in itertools.combinations(nt_list, n):
+                    if sum([consensus[idx][k] for k in c]) / total >= int(args.consensus) / 100:
+                        #print(c, end="")
+                        print(IUPAC_nt_codes["".join(sorted(c))], end="")
+                        break
+
+
+
+            #print(IUPAC_nt_codes[code], end="")
+        #print(total)
+
+    print()
+
 
 print("</pre></body></html>")
