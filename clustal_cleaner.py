@@ -1,6 +1,7 @@
 """
-
 CLUSTAL Cleaner
+
+(c) Olivier Friard 2021-2022
 
 Clear the CLUSTAL output and position sequences from a FASTA file
 
@@ -10,7 +11,6 @@ Clear the CLUSTAL output and position sequences from a FASTA file
 
 
 
-(c) Olivier Friard 2021-2022
 
 """
 
@@ -44,6 +44,26 @@ IUPAC_nt_codes = {'A': 'A',
                   'ACG': 'V',
                   'ACGT': 'N',
                  }
+
+
+IUPAC_degenerated = {'-':'-',
+                      'A': 'A',
+                  'C': 'C',
+                  'G': 'G',
+                  'T': 'T',
+                  'R':'AG',  
+                  'Y':'CT',  
+                  'S':'CG',  
+                  'W':'AT',  
+                  'K':'GT',  
+                  'M':'AC',  
+                  'B':'CGT', 
+                  'D':'AGT', 
+                  'H':'ACT', 
+                  'V':'ACG', 
+                  'N':'ACGT',
+                 }
+
 
 
 parser = argparse.ArgumentParser(description='Clustal Cleaner',)
@@ -246,10 +266,11 @@ for id in sequences:
         if args.consensus:
             #if idx not in consensus:
             #    consensus[idx] = {}
-            if nt not in consensus[idx]:
-                consensus[idx][nt] = 1
-            else:
-                consensus[idx][nt] += 1
+            for nt2 in IUPAC_degenerated[nt]:
+                if nt2 not in consensus[idx]:
+                    consensus[idx][nt2] = 1 / len(IUPAC_degenerated[nt])
+                else:
+                    consensus[idx][nt2] += 1 / len(IUPAC_degenerated[nt])
 
     if args.sequence_file:
         target = {}
@@ -303,6 +324,12 @@ if args.consensus:
     print(" " * (max_len_id - len(row_header)  + ROW_HEADER_ID), end="")
 
     for idx in sorted(consensus.keys()):
+
+        print(f"{idx=}", file=sys.stderr)
+
+        print(f"{consensus[idx]}", file=sys.stderr)
+
+
         total = sum([consensus[idx][k] for k in consensus[idx]])
         #print(total)
 
@@ -313,15 +340,36 @@ if args.consensus:
                 print(nt, end="")
                 break
         else:
-            # print degenerated nt
-            nt_list = list(consensus[idx])
 
+
+            #print("X", end="")
+            #continue
+
+            # print degenerated nt
+            print(f"{consensus[idx]}", file=sys.stderr)
+            nt_list = list(consensus[idx])
+            print(f"{nt_list=}", file=sys.stderr)
+
+            # remove gap '-'
+            #nt_list.remove('-')
+ 
+            flag_stop = False
             for n in range(1, 4 + 1):
+                print(f"{n=}", file=sys.stderr)
                 for c in itertools.combinations(nt_list, n):
+
+                    if '-' in c:
+                        print('-', end="")
+                        flag_stop = True
+                        break
+
                     if sum([consensus[idx][k] for k in c]) / total >= int(args.consensus) / 100:
                         #print(c, end="")
                         print(IUPAC_nt_codes["".join(sorted(c))], end="")
+                        flag_stop = True
                         break
+                if flag_stop:
+                    break
 
 
 
