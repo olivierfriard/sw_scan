@@ -9,9 +9,6 @@ Clear the CLUSTAL output and position sequences from a FASTA file
 --consensus n    print a consensus sequence at n%
 --stars          print a star when all nucleotides are identical
 
-
-
-
 """
 
 __version__ = "4"
@@ -28,51 +25,58 @@ from Bio import AlignIO
 from Bio.Seq import Seq
 from Bio import SeqIO
 
-IUPAC_nt_codes = {'A': 'A',
-                  'C': 'C',
-                  'G': 'G',
-                  'T': 'T',
-                  'AG': 'R',
-                  'CT': 'Y',
-                  'CG': 'S',
-                  'AT': 'W',
-                  'GT': 'K',
-                  'AC': 'M',
-                  'CGT': 'B',
-                  'AGT': 'D',
-                  'ACT': 'H',
-                  'ACG': 'V',
-                  'ACGT': 'N',
-                 }
+IUPAC_nt_codes = {
+    "A": "A",
+    "C": "C",
+    "G": "G",
+    "T": "T",
+    "AG": "R",
+    "CT": "Y",
+    "CG": "S",
+    "AT": "W",
+    "GT": "K",
+    "AC": "M",
+    "CGT": "B",
+    "AGT": "D",
+    "ACT": "H",
+    "ACG": "V",
+    "ACGT": "N",
+}
 
 
-IUPAC_degenerated = {'-':'-',
-                      'A': 'A',
-                  'C': 'C',
-                  'G': 'G',
-                  'T': 'T',
-                  'R':'AG',  
-                  'Y':'CT',  
-                  'S':'CG',  
-                  'W':'AT',  
-                  'K':'GT',  
-                  'M':'AC',  
-                  'B':'CGT', 
-                  'D':'AGT', 
-                  'H':'ACT', 
-                  'V':'ACG', 
-                  'N':'ACGT',
-                 }
+IUPAC_degenerated = {
+    "-": "-",
+    "A": "A",
+    "C": "C",
+    "G": "G",
+    "T": "T",
+    "R": "AG",
+    "Y": "CT",
+    "S": "CG",
+    "W": "AT",
+    "K": "GT",
+    "M": "AC",
+    "B": "CGT",
+    "D": "AGT",
+    "H": "ACT",
+    "V": "ACG",
+    "N": "ACGT",
+}
 
 
+parser = argparse.ArgumentParser(
+    description="Clustal Cleaner",
+)
 
-parser = argparse.ArgumentParser(description='Clustal Cleaner',)
-
-parser.add_argument('-i', action="store", dest="input", help="CLUSTAL alignment file")
-parser.add_argument('-m', action="store", dest="model", help="Reference sequence")
-parser.add_argument("-s", action="store", dest="sequence_file", help="FASTA file containing the sequences to position on the alignment")
+parser.add_argument("-i", action="store", dest="input", help="CLUSTAL alignment file")
+parser.add_argument("-m", action="store", dest="model", help="Reference sequence")
+parser.add_argument(
+    "-s", action="store", dest="sequence_file", help="FASTA file containing the sequences to position on the alignment"
+)
 parser.add_argument("-g", action="store_true", dest="group", help="Group sequences when identical")
-parser.add_argument("--stars", action="store_true", dest="stars", help="Print stars when nucleotides are identical on column")
+parser.add_argument(
+    "--stars", action="store_true", dest="stars", help="Print stars when nucleotides are identical on column"
+)
 parser.add_argument("--consensus", action="store", dest="consensus", help="Print a consensus sequence (in percent)")
 
 args = parser.parse_args()
@@ -88,8 +92,6 @@ if not args.input:
 if not pl.Path(args.input).is_file:
     print("File not found", file=sys.stderr)
     sys.exit(2)
-
-
 
 
 def read_seq_from_clustal(file_path: str):
@@ -189,13 +191,11 @@ if args.sequence_file:
                 print(f"NOT FOUND", file=sys.stderr)
 
 
-
 SPAN_F_OPEN = '<span style="background-color: yellow">'
-SPAN_CLOSE = '</span>'
+SPAN_CLOSE = "</span>"
 SPAN_R_OPEN = '<span style="background-color: lime">'
 
-SPAN_OPEN = {"": '<span style="background-color: yellow">',
-             " (rev-comp)": '<span style="background-color: lime">'}
+SPAN_OPEN = {"": '<span style="background-color: yellow">', " (rev-comp)": '<span style="background-color: lime">'}
 
 print("<html><head></head><body><pre>")
 
@@ -209,17 +209,28 @@ if args.sequence_file:
     # pre-header for seq names
     pre_header = " " * [len(sequences[k]) for k in sequences][0]
     for seq_id in seq_idx:
-        pre_header = pre_header[0:seq_idx[seq_id]] + seq_id + polarity[seq_id] + header[seq_idx[seq_id] + len(seq_id + polarity[seq_id]):]
+        pre_header = (
+            pre_header[0 : seq_idx[seq_id]]
+            + seq_id
+            + polarity[seq_id]
+            + header[seq_idx[seq_id] + len(seq_id + polarity[seq_id]) :]
+        )
     print(" " * (max_len_id + ROW_HEADER_ID), end="")
     print(pre_header)
 
     # position
     for seq_id in seq_idx:
-        header_out = header_out[0:seq_idx[seq_id]] + seq2position[seq_id]  + header[seq_idx[seq_id] + len(seq2position[seq_id]):]
+        header_out = (
+            header_out[0 : seq_idx[seq_id]]
+            + seq2position[seq_id]
+            + header[seq_idx[seq_id] + len(seq2position[seq_id]) :]
+        )
 
     # colorize
     for seq_id in seq_idx:
-        header_out = header_out.replace(seq2position[seq_id], SPAN_OPEN[polarity[seq_id]] + seq2position[seq_id] + SPAN_CLOSE)
+        header_out = header_out.replace(
+            seq2position[seq_id], SPAN_OPEN[polarity[seq_id]] + seq2position[seq_id] + SPAN_CLOSE
+        )
 
 print(" " * (max_len_id + ROW_HEADER_ID), end="")
 print(header_out)
@@ -241,7 +252,9 @@ if args.consensus:
 ref_seq_out = ref_seq
 if args.sequence_file:
     for seq_id in seq_idx:
-        ref_seq_out = ref_seq_out.replace(seq2position[seq_id], SPAN_OPEN[polarity[seq_id]] + seq2position[seq_id] + SPAN_CLOSE)
+        ref_seq_out = ref_seq_out.replace(
+            seq2position[seq_id], SPAN_OPEN[polarity[seq_id]] + seq2position[seq_id] + SPAN_CLOSE
+        )
 
 print(ref_seq_out)
 
@@ -264,7 +277,7 @@ for id in sequences:
 
         # consensus
         if args.consensus:
-            #if idx not in consensus:
+            # if idx not in consensus:
             #    consensus[idx] = {}
             for nt2 in IUPAC_degenerated[nt]:
                 if nt2 not in consensus[idx]:
@@ -276,7 +289,7 @@ for id in sequences:
         target = {}
         for seq_id in seq_idx:
             target[seq_id] = ""
-            for idx, nt in enumerate(seq[seq_idx[seq_id]:seq_idx[seq_id] + len(seq2position[seq_id])]):
+            for idx, nt in enumerate(seq[seq_idx[seq_id] : seq_idx[seq_id] + len(seq2position[seq_id])]):
                 if nt == seq2position[seq_id][idx]:
                     target[seq_id] += "."
                 else:
@@ -289,7 +302,11 @@ for id in sequences:
     if args.sequence_file:
         count = 0
         for seq_id in seq_idx:
-            output = output[0:seq_idx[seq_id]] + (str(count) * len(target[seq_id])) + output[seq_idx[seq_id] + len(seq2position[seq_id]):]
+            output = (
+                output[0 : seq_idx[seq_id]]
+                + (str(count) * len(target[seq_id]))
+                + output[seq_idx[seq_id] + len(seq2position[seq_id]) :]
+            )
             count += 1
             if count == 10:
                 print("too many sequences to position (<10)", file=sys.stderr)
@@ -297,7 +314,9 @@ for id in sequences:
 
         count = 0
         for seq_id in seq_idx:
-            output = output.replace(str(count) * len(target[seq_id]), SPAN_OPEN[polarity[seq_id]] + target[seq_id] + SPAN_CLOSE)
+            output = output.replace(
+                str(count) * len(target[seq_id]), SPAN_OPEN[polarity[seq_id]] + target[seq_id] + SPAN_CLOSE
+            )
             count += 1
 
     print(output)
@@ -305,7 +324,7 @@ for id in sequences:
 # print *
 if args.stars:
     print()
-    print(" " * (max_len_id  + ROW_HEADER_ID), end="")
+    print(" " * (max_len_id + ROW_HEADER_ID), end="")
     for nt in stars:
         if nt == " ":
             print(nt, end="")
@@ -313,7 +332,7 @@ if args.stars:
             print("*", end="")
     print()
 
-#print(consensus)
+# print(consensus)
 
 if args.consensus:
 
@@ -321,7 +340,7 @@ if args.consensus:
     row_header = f"{args.consensus}%"
     print(row_header, end="")
 
-    print(" " * (max_len_id - len(row_header)  + ROW_HEADER_ID), end="")
+    print(" " * (max_len_id - len(row_header) + ROW_HEADER_ID), end="")
 
     for idx in sorted(consensus.keys()):
 
@@ -329,21 +348,19 @@ if args.consensus:
 
         print(f"{consensus[idx]}", file=sys.stderr)
 
-
         total = sum([consensus[idx][k] for k in consensus[idx]])
-        #print(total)
+        # print(total)
 
         for nt in consensus[idx]:
-            #print(consensus[idx][nt] / total)
-            #print(int(args.consensus) / 100)
+            # print(consensus[idx][nt] / total)
+            # print(int(args.consensus) / 100)
             if consensus[idx][nt] / total >= int(args.consensus) / 100:
                 print(nt, end="")
                 break
         else:
 
-
-            #print("X", end="")
-            #continue
+            # print("X", end="")
+            # continue
 
             # print degenerated nt
             print(f"{consensus[idx]}", file=sys.stderr)
@@ -351,30 +368,28 @@ if args.consensus:
             print(f"{nt_list=}", file=sys.stderr)
 
             # remove gap '-'
-            #nt_list.remove('-')
- 
+            # nt_list.remove('-')
+
             flag_stop = False
             for n in range(1, 4 + 1):
                 print(f"{n=}", file=sys.stderr)
                 for c in itertools.combinations(nt_list, n):
 
-                    if '-' in c:
-                        print('-', end="")
+                    if "-" in c:
+                        print("-", end="")
                         flag_stop = True
                         break
 
                     if sum([consensus[idx][k] for k in c]) / total >= int(args.consensus) / 100:
-                        #print(c, end="")
+                        # print(c, end="")
                         print(IUPAC_nt_codes["".join(sorted(c))], end="")
                         flag_stop = True
                         break
                 if flag_stop:
                     break
 
-
-
-            #print(IUPAC_nt_codes[code], end="")
-        #print(total)
+            # print(IUPAC_nt_codes[code], end="")
+        # print(total)
 
     print()
 
