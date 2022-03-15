@@ -35,8 +35,8 @@ from sw_scan_ui import Ui_MainWindow
 import sys
 import time
 
-__version__ = "5"
-__version_date__ = "2022-02-07"
+__version__ = "6"
+__version_date__ = "2022-03-15"
 
 
 class SW_Scan(QMainWindow, Ui_MainWindow):
@@ -147,7 +147,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             return
 
         self.statusBar().showMessage(f"Filtering sequences")
-        app.processEvents()
+        # app.processEvents()
 
         id = self.le_id.text().upper() if self.le_id.text() else ""
         description1 = self.le_description1.text().upper() if self.le_description1.text() else ""
@@ -186,8 +186,11 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         else:
             self.sql = ""
 
+        self.frame.setEnabled(False)
         self.pte_sql.setPlainText(self.sql2)
         self.le_order.setText(SEQ_ORDER)
+
+        app.processEvents()
 
         t1 = time.time()
         self.model.setFilter(self.sql)
@@ -200,12 +203,17 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             q.first()
             self.statusBar().showMessage(f"{q.value('n'):,} sequence(s) filtered")
 
+        self.frame.setEnabled(True)
+
     def run_query(self):
         """
         Run SQL query defined by user
         """
         if self.pte_sql.toPlainText():
 
+            self.statusBar().showMessage(f"Running query")
+            self.frame.setEnabled(False)
+            app.processEvents()
             t1 = time.time()
             self.model.setFilter(self.pte_sql.toPlainText())
             self.model.select()
@@ -218,11 +226,10 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 self.statusBar().showMessage(f"{q.value('n'):,} sequence(s) filtered")
 
             self.sql2 = self.pte_sql.toPlainText()
+            self.frame.setEnabled(True)
 
         else:
-
             self.sql2 = ""
-
             self.statusBar().showMessage(f"No query to run")
 
     def save_fasta(self):
@@ -306,9 +313,8 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             return
 
         self.statusBar().showMessage(f"Saving FBS file")
+        self.frame.setEnabled(False)
         app.processEvents()
-
-        print(f"{self.sql2=}")
 
         if self.sql2:
             conditions = f"WHERE {self.sql2}"
@@ -324,7 +330,6 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
         q.first()
         max_id_len = q.value("max_id_descr_len")
-        app.processEvents()
 
         q = QtSql.QSqlQuery(f"SELECT count(distinct aligned_query_sequence) as n FROM sequences {conditions}")
         if q.exec_():
@@ -427,6 +432,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             f_out.write(out)
 
         self.statusBar().showMessage(f"Saving FBS file done")
+        self.frame.setEnabled(True)
 
 
 if __name__ == "__main__":
