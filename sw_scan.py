@@ -5,17 +5,26 @@ Display and filter results of sw (SQLite version)
 
 """
 
-FIELDS_NAME = ("accession", "description", "frame", "identity",
-"score", "align_length", "target_length", "aligned_query_sequence",
-"aligned_target_sequence",
-"query_begin", "query_end", "target_begin", "target_end_optimal")
+FIELDS_NAME = (
+    "accession",
+    "description",
+    "frame",
+    "identity",
+    "score",
+    "align_length",
+    "target_length",
+    "aligned_query_sequence",
+    "aligned_target_sequence",
+    "query_begin",
+    "query_end",
+    "target_begin",
+    "target_end_optimal",
+)
 
 
 SEQ_ORDER = " ORDER BY identity DESC "
 
-from PyQt5.QtWidgets import (QMainWindow, QApplication,
-                             QTableWidgetItem,
-                             QFileDialog, QMessageBox)
+from PyQt5.QtWidgets import QMainWindow, QApplication, QTableWidgetItem, QFileDialog, QMessageBox
 from PyQt5 import QtSql
 
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
@@ -24,13 +33,13 @@ from PyQt5 import QtCore
 
 from sw_scan_ui import Ui_MainWindow
 import sys
+import time
 
-__version__ = '5'
+__version__ = "5"
 __version_date__ = "2022-02-07"
 
 
 class SW_Scan(QMainWindow, Ui_MainWindow):
-
     def __init__(self, input_file_name: str, parent=None):
 
         super(SW_Scan, self).__init__(parent)
@@ -48,7 +57,6 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         if input_file_name:
             self.load_file(input_file_name)
 
-
     def initialize_var(self):
         self.file_name = ""
         self.align = None
@@ -56,7 +64,6 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.n_seq = 0
 
         self.sql2 = ""
-
 
     def connections(self):
         self.action_load_file.triggered.connect(lambda: self.load_file(""))
@@ -69,28 +76,28 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.actionAbout.triggered.connect(self.about)
         self.action_quit.triggered.connect(self.close)
 
-
     def about(self):
 
         about_dialog = QMessageBox()
-        #about_dialog.setIconPixmap(QPixmap(":/small_logo"))
+        # about_dialog.setIconPixmap(QPixmap(":/small_logo"))
 
         about_dialog.setWindowTitle("About SW Scan")
         about_dialog.setStandardButtons(QMessageBox.Ok)
         about_dialog.setDefaultButton(QMessageBox.Ok)
         about_dialog.setEscapeButton(QMessageBox.Ok)
 
-        about_dialog.setInformativeText((
-            f"<b>SW Scan</b> v. {__version__} - {__version_date__}"
-            "<p>Copyright &copy; 2021 Olivier Friard<br>"
-            "Department of Life Sciences and Systems Biology<br>"
-            "University of Torino - Italy<br>"
-        ))
+        about_dialog.setInformativeText(
+            (
+                f"<b>SW Scan</b> v. {__version__} - {__version_date__}"
+                "<p>Copyright &copy; 2021-2022 Olivier Friard<br>"
+                "Department of Life Sciences and Systems Biology<br>"
+                "University of Torino - Italy<br>"
+            )
+        )
 
         about_dialog.setDetailedText("")
 
         _ = about_dialog.exec_()
-
 
     def load_file(self, file_name):
 
@@ -101,11 +108,12 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         else:
             self.file_name = file_name
 
+        t1 = time.time()
 
         self.db = QtSql.QSqlDatabase.addDatabase("QSQLITE")
         self.db.setDatabaseName(self.file_name)
         if not self.db.open():
-            print("Error opening the file")
+            self.statusBar().showMessage(f"Error opening the alignment file")
             sys.exit(-1)
 
         self.model = QtSql.QSqlTableModel()
@@ -113,21 +121,24 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.model.setTable("sequences")
         self.model.select()
 
+        t2 = time.time()
+        print("loading: ", t2 - t1)
 
+        t1 = time.time()
         q = QtSql.QSqlQuery("SELECT count(*) as n FROM sequences")
         if q.exec_():
             q.first()
             self.statusBar().showMessage(f"SW results loaded: {q.value('n'):,} sequence(s)")
-
-
+        else:
+            self.statusBar().showMessage(f"Error opening the alignment file")
+        t2 = time.time()
+        print("counting: ", t2 - t1)
 
     def clear(self):
-        for w in (self.le_id, self.le_description1, self.le_description2,
-                  self.le_identity, self.le_align_length):
+        for w in (self.le_id, self.le_description1, self.le_description2, self.le_identity, self.le_align_length):
             w.clear()
 
         self.filter()
-
 
     def filter(self):
 
@@ -150,20 +161,24 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
         if description1:
             for term in description1.split(","):
-                if self.sql2: self.sql2 += " AND "
+                if self.sql2:
+                    self.sql2 += " AND "
                 self.sql2 += f" description LIKE '%{term}%' "
 
         if description2:
             for term in description2.split(","):
-                if self.sql2: self.sql2 += " AND "
+                if self.sql2:
+                    self.sql2 += " AND "
                 self.sql2 += f" description NOT LIKE '%{term}%' "
 
         if identity_pc:
-            if self.sql2: self.sql2 += " AND "
+            if self.sql2:
+                self.sql2 += " AND "
             self.sql2 += f" identity {self.cb_identity_relation.currentText()} {identity_pc} "
 
         if min_align_length:
-            if self.sql2: self.sql2 += " AND "
+            if self.sql2:
+                self.sql2 += " AND "
             self.sql2 += f" align_length >= {min_align_length} "
 
         if self.sql2:
@@ -174,14 +189,16 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.pte_sql.setPlainText(self.sql2)
         self.le_order.setText(SEQ_ORDER)
 
+        t1 = time.time()
         self.model.setFilter(self.sql)
         self.model.select()
+        t2 = time.time()
+        print("filter:", t2 - t1)
 
         q = QtSql.QSqlQuery(f"SELECT count(*) as n FROM sequences WHERE {self.sql2}")
         if q.exec_():
             q.first()
             self.statusBar().showMessage(f"{q.value('n'):,} sequence(s) filtered")
-
 
     def run_query(self):
         """
@@ -189,8 +206,11 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         """
         if self.pte_sql.toPlainText():
 
+            t1 = time.time()
             self.model.setFilter(self.pte_sql.toPlainText())
             self.model.select()
+            t2 = time.time()
+            print("run query", t2 - t1)
 
             q = QtSql.QSqlQuery(f"SELECT count(*) as n FROM sequences WHERE {self.pte_sql.toPlainText()}")
             if q.exec_():
@@ -205,7 +225,6 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
             self.statusBar().showMessage(f"No query to run")
 
-
     def save_fasta(self):
         """
         save sequences from results in FASTA format
@@ -219,12 +238,15 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 conditions = f"WHERE {self.sql2}"
             else:
                 conditions = ""
-            q = QtSql.QSqlQuery(f"SELECT id, frame, aligned_target_sequence FROM sequences {conditions}  {self.le_order.text()}")
+            q = QtSql.QSqlQuery(
+                f"SELECT id, frame, aligned_target_sequence FROM sequences {conditions}  {self.le_order.text()}"
+            )
             if q.exec_():
                 while q.next():
-                    print(f">{q.value('id')}_{q.value('frame')}\n{q.value('aligned_target_sequence').replace('-', '')}", file=f_out)
-
-
+                    print(
+                        f">{q.value('id')}_{q.value('frame')}\n{q.value('aligned_target_sequence').replace('-', '')}",
+                        file=f_out,
+                    )
 
     def save_tsv(self):
         """
@@ -244,15 +266,21 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             else:
                 conditions = ""
 
-
             q = QtSql.QSqlQuery(f"SELECT * FROM sequences {conditions} {self.le_order.text()}")
             if q.exec_():
                 while q.next():
                     app.processEvents()
-                    print("\t".join([str(q.value(self.model.headerData(i, QtCore.Qt.Horizontal))) for i in range(self.model.columnCount())]), file=f_out)
+                    print(
+                        "\t".join(
+                            [
+                                str(q.value(self.model.headerData(i, QtCore.Qt.Horizontal)))
+                                for i in range(self.model.columnCount())
+                            ]
+                        ),
+                        file=f_out,
+                    )
 
         self.statusBar().showMessage(f"Saving TSV file done")
-
 
     def message_dialog(self, title, text, buttons):
         message = QMessageBox()
@@ -265,13 +293,12 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         message.exec_()
         return message.clickedButton().text()
 
-
     def save_fbs(self):
         """
         Export sequences in query anchored format
         """
 
-        flag_group = (self.message_dialog("SW Scan", "Group identical sequences?", ["Yes", "No"]) == "Yes")
+        flag_group = self.message_dialog("SW Scan", "Group identical sequences?", ["Yes", "No"]) == "Yes"
 
         # all uniq aligned query
         file_name, _ = QFileDialog.getSaveFileName(self, "Save file FBS", "")
@@ -289,24 +316,26 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             conditions = ""
 
         # get max of id and description
-        q = QtSql.QSqlQuery(f"SELECT MAX(length(id) + length(description)) AS max_id_descr_len FROM sequences {conditions}")
+        q = QtSql.QSqlQuery(
+            f"SELECT MAX(length(id) + length(description)) AS max_id_descr_len FROM sequences {conditions}"
+        )
         if not q.exec_():
             self.statusBar().showMessage(f"SQL error")
 
         q.first()
-        max_id_len = q.value('max_id_descr_len')
+        max_id_len = q.value("max_id_descr_len")
         app.processEvents()
 
-
         q = QtSql.QSqlQuery(f"SELECT count(distinct aligned_query_sequence) as n FROM sequences {conditions}")
-        if  q.exec_():
+        if q.exec_():
             q.first()
-            n_distinct_aligned_query = q.value('n')
-
+            n_distinct_aligned_query = q.value("n")
 
         with open(file_name, "w") as f_out:
 
-            q = QtSql.QSqlQuery(f"SELECT distinct aligned_query_sequence FROM sequences {conditions} ORDER BY score DESC, LENGTH(aligned_query_sequence) DESC")
+            q = QtSql.QSqlQuery(
+                f"SELECT distinct aligned_query_sequence FROM sequences {conditions} ORDER BY score DESC, LENGTH(aligned_query_sequence) DESC"
+            )
             if not q.exec_():
                 self.statusBar().showMessage(f"SQL error")
 
@@ -318,23 +347,24 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 self.statusBar().showMessage(f"Saving FBS file {count} / {n_distinct_aligned_query}")
                 app.processEvents()
 
-                out += "query" + (" " *  (max_id_len + 5 - 5)) + q.value('aligned_query_sequence') + "\n"
+                out += "query" + (" " * (max_id_len + 5 - 5)) + q.value("aligned_query_sequence") + "\n"
                 count += 1
                 if conditions:
                     conditions2 = " AND " + conditions.replace("WHERE", "")
                 else:
                     conditions2 = ""
 
-                '''
+                """
                 query2 = (f"SELECT id, description, frame, aligned_query_sequence, aligned_target_sequence FROM sequences "
                                       f"where aligned_query_sequence like '%{q.value('aligned_query_sequence')}%' {conditions2} "
                                       "ORDER BY id")
-                '''
+                """
 
-                query2 = (f"SELECT id, description, frame, aligned_query_sequence, aligned_target_sequence FROM sequences "
-                                      f"where aligned_query_sequence = '{q.value('aligned_query_sequence')}' {conditions2} "
-                                      "ORDER BY score DESC, id")
-
+                query2 = (
+                    f"SELECT id, description, frame, aligned_query_sequence, aligned_target_sequence FROM sequences "
+                    f"where aligned_query_sequence = '{q.value('aligned_query_sequence')}' {conditions2} "
+                    "ORDER BY score DESC, id"
+                )
 
                 q2 = QtSql.QSqlQuery(query2)
 
@@ -354,8 +384,9 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                     else:
                         id_dict[aligned_target_sequence].append(id_descr)
 
-
-                    formated_aligned_target_sequence = (" " * q2.value("aligned_query_sequence").index(q.value("aligned_query_sequence"))) + aligned_target_sequence
+                    formated_aligned_target_sequence = (
+                        " " * q2.value("aligned_query_sequence").index(q.value("aligned_query_sequence"))
+                    ) + aligned_target_sequence
 
                     ats = ""
                     for nq, nt in zip(q.value("aligned_query_sequence"), formated_aligned_target_sequence):
@@ -398,7 +429,6 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.statusBar().showMessage(f"Saving FBS file done")
 
 
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     if len(sys.argv) > 1:
@@ -409,5 +439,3 @@ if __name__ == "__main__":
     program.show()
     program.raise_()
     sys.exit(app.exec_())
-
-
