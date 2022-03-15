@@ -5,8 +5,8 @@ Align a query sequence with the smith-waterman algorithm (skbio) with sequences 
 (c) Olivier Friard
 """
 
-__version__ = '6'
-__version_date__ = "2021-11-16"
+__version__ = "7"
+__version_date__ = "2022-02-15"
 
 import os
 from multiprocessing import Pool, cpu_count
@@ -29,25 +29,34 @@ GAP_EXTEND_PENALTY = 4
 MP_MAX_SEQUENCES_NUMBER = 10000
 
 
-'''
+"""
 alignment.aligned_query_sequence      alignment.query_begin                 alignment.target_begin
 alignment.aligned_target_sequence     alignment.query_end                   alignment.target_end_optimal
 alignment.cigar                       alignment.query_sequence              alignment.target_end_suboptimal
 alignment.is_zero_based(              alignment.set_zero_based(             alignment.target_sequence
 alignment.optimal_alignment_score     alignment.suboptimal_alignment_score
-'''
+"""
 
 
 def output(id, description, alignment):
 
     # remove id from description
-    description = description.replace(id , "").strip()
+    description = description.replace(id, "").strip()
 
-    return [id, description, alignment['frame'], alignment['identity'], alignment['score'],
-            alignment['align_length'], alignment['target_length'],
-            alignment['aligned_query_sequence'], alignment['aligned_target_sequence'],
-            alignment['query_begin'], alignment['query_end'],
-            alignment['target_begin'], alignment['target_end_optimal']
+    return [
+        id,
+        description,
+        alignment["frame"],
+        alignment["identity"],
+        alignment["score"],
+        alignment["align_length"],
+        alignment["target_length"],
+        alignment["aligned_query_sequence"],
+        alignment["aligned_target_sequence"],
+        alignment["query_begin"],
+        alignment["query_end"],
+        alignment["target_begin"],
+        alignment["target_end_optimal"],
     ]
 
 
@@ -65,18 +74,19 @@ def align(input):  # target_seq, target_id, target_description):
         if idx == -1:
             break
         found_100 = True
-        alignment_f = {"frame": frame,
-                       "score": query_sequence_length * MATCH_SCORE,
-                       "identity": "100.00",
-                       "align_length": len(query_sequence),
-                       "target_length": len(target_seq),
-                       "aligned_query_sequence": query_sequence,
-                       "aligned_target_sequence": query_sequence,
-                       "query_begin": 1,
-                       "query_end": len(query_sequence),
-                       "target_begin": idx + 1,
-                       "target_end_optimal": idx  + len(query_sequence)
-                      }
+        alignment_f = {
+            "frame": frame,
+            "score": query_sequence_length * MATCH_SCORE,
+            "identity": "100.00",
+            "align_length": len(query_sequence),
+            "target_length": len(target_seq),
+            "aligned_query_sequence": query_sequence,
+            "aligned_target_sequence": query_sequence,
+            "query_begin": 1,
+            "query_end": len(query_sequence),
+            "target_begin": idx + 1,
+            "target_end_optimal": idx + len(query_sequence),
+        }
         result.append(output(target_id, target_description, alignment_f))
 
     if not found_100:
@@ -90,24 +100,27 @@ def align(input):  # target_seq, target_id, target_description):
                 matches += 1
         identity = 100 * matches / len(ssw_alignment.aligned_query_sequence)
 
-        alignment_f = {"frame": frame,
-                       "score": ssw_alignment['optimal_alignment_score'],
-                       "identity": round(identity, 2),
-                       "align_length": len(ssw_alignment.aligned_target_sequence),
-                       "target_length": len(target_seq),
-                       "aligned_query_sequence": ssw_alignment.aligned_query_sequence,
-                       "aligned_target_sequence": ssw_alignment.aligned_target_sequence,
-                       "query_begin":  ssw_alignment.query_begin,
-                       "query_end": ssw_alignment.query_end,
-                       "target_begin": ssw_alignment.target_begin,
-                       "target_end_optimal": ssw_alignment.target_end_optimal,
-                       }
+        alignment_f = {
+            "frame": frame,
+            "score": ssw_alignment["optimal_alignment_score"],
+            "identity": round(identity, 2),
+            "align_length": len(ssw_alignment.aligned_target_sequence),
+            "target_length": len(target_seq),
+            "aligned_query_sequence": ssw_alignment.aligned_query_sequence,
+            "aligned_target_sequence": ssw_alignment.aligned_target_sequence,
+            "query_begin": ssw_alignment.query_begin,
+            "query_end": ssw_alignment.query_end,
+            "target_begin": ssw_alignment.target_begin,
+            "target_end_optimal": ssw_alignment.target_end_optimal,
+        }
         if MIN_IDENTITY or MIN_ALIGN_LENGTH:
-            if alignment_f["identity"] >= MIN_IDENTITY and alignment_f["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH:
+            if (
+                alignment_f["identity"] >= MIN_IDENTITY
+                and alignment_f["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH
+            ):
                 result.append(output(target_id, target_description, alignment_f))
         else:
             result.append(output(target_id, target_description, alignment_f))
-
 
     frame = "r"
     idx = -1
@@ -118,18 +131,19 @@ def align(input):  # target_seq, target_id, target_description):
             break
         found_100 = True
 
-        alignment_r = {"frame": frame,
-                       "score": query_sequence_length * MATCH_SCORE,
-                       "identity": "100.00",
-                       "align_length": query_sequence_length,
-                       "target_length": len(target_seq),
-                       "aligned_query_sequence": query_sequence,
-                       "aligned_target_sequence": query_sequence,
-                       "query_begin": 1,
-                       "query_end": len(query_sequence_revcomp),
-                       "target_begin": idx + 1,
-                       "target_end_optimal": idx + len(query_sequence_revcomp)
-                       }
+        alignment_r = {
+            "frame": frame,
+            "score": query_sequence_length * MATCH_SCORE,
+            "identity": "100.00",
+            "align_length": query_sequence_length,
+            "target_length": len(target_seq),
+            "aligned_query_sequence": query_sequence,
+            "aligned_target_sequence": query_sequence,
+            "query_begin": 1,
+            "query_end": len(query_sequence_revcomp),
+            "target_begin": idx + 1,
+            "target_end_optimal": idx + len(query_sequence_revcomp),
+        }
 
         result.append(output(target_id, target_description, alignment_r))
 
@@ -142,24 +156,28 @@ def align(input):  # target_seq, target_id, target_description):
                 matches += 1
         identity = 100 * matches / len(ssw_alignment_revcomp.aligned_query_sequence)
 
-        alignment_r = {"frame": frame,
-                       "score": ssw_alignment_revcomp['optimal_alignment_score'],
-                       "identity": round(identity, 2),
-                       "align_length": len(ssw_alignment_revcomp.aligned_target_sequence),
-                       "target_length": len(target_seq),
-                       #"aligned_query_sequence": ssw_alignment_revcomp.aligned_query_sequence,
-                       "aligned_query_sequence": str(Seq(ssw_alignment_revcomp.aligned_query_sequence).reverse_complement()),
-                       #"aligned_target_sequence": ssw_alignment_revcomp.aligned_target_sequence,
-                       "aligned_target_sequence": str(Seq(ssw_alignment_revcomp.aligned_target_sequence).reverse_complement()),
-                       "query_begin":  ssw_alignment_revcomp.query_begin,
-                       "query_end": ssw_alignment_revcomp.query_end,
-                       "target_begin": ssw_alignment_revcomp.target_begin,
-                       "target_end_optimal": ssw_alignment_revcomp.target_end_optimal,
-                      }
+        alignment_r = {
+            "frame": frame,
+            "score": ssw_alignment_revcomp["optimal_alignment_score"],
+            "identity": round(identity, 2),
+            "align_length": len(ssw_alignment_revcomp.aligned_target_sequence),
+            "target_length": len(target_seq),
+            # "aligned_query_sequence": ssw_alignment_revcomp.aligned_query_sequence,
+            "aligned_query_sequence": str(Seq(ssw_alignment_revcomp.aligned_query_sequence).reverse_complement()),
+            # "aligned_target_sequence": ssw_alignment_revcomp.aligned_target_sequence,
+            "aligned_target_sequence": str(Seq(ssw_alignment_revcomp.aligned_target_sequence).reverse_complement()),
+            "query_begin": ssw_alignment_revcomp.query_begin,
+            "query_end": ssw_alignment_revcomp.query_end,
+            "target_begin": ssw_alignment_revcomp.target_begin,
+            "target_end_optimal": ssw_alignment_revcomp.target_end_optimal,
+        }
 
         if MIN_IDENTITY or MIN_ALIGN_LENGTH:
-            if alignment_r["identity"] >= MIN_IDENTITY and alignment_r["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH:
-               result.append(output(target_id, target_description, alignment_r))
+            if (
+                alignment_r["identity"] >= MIN_IDENTITY
+                and alignment_r["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH
+            ):
+                result.append(output(target_id, target_description, alignment_r))
         else:
             result.append(output(target_id, target_description, alignment_r))
 
@@ -173,10 +191,7 @@ def align_mp(seq_list):
     return results
 
 
-
-
 def main():
-
     def align_file(target_file):
         """
         align sequences from file by chunk of MP_MAX_SEQUENCES_NUMBER sequences
@@ -199,7 +214,6 @@ def main():
                 connection.commit()
                 seq_list = []
 
-
         # check if seq_list is not empty
         if seq_list:
             results = align_mp(seq_list)
@@ -208,29 +222,35 @@ def main():
                     cursor.execute("INSERT INTO sequences  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", r)
             connection.commit()
 
-
-                #final_results.extend(result)
+            # final_results.extend(result)
         return seq_number
 
     connection = sqlite3.connect(output_file)
     connection.row_factory = sqlite3.Row
     cursor = connection.cursor()
-    cursor.execute(("create table sequences "
-                    "(id text, description text, frame text, identity float, score float, "
-                    " align_length int, target_length int, aligned_query_sequence text, aligned_target_sequence text, "
-                    "query_begin int, query_end int, target_begin int, target_end_optimal int)"
-                   ))
+    cursor.execute(
+        (
+            "CREATE TABLE sequences "
+            "(id text, description text, frame text, identity float, score float, "
+            " align_length int, target_length int, aligned_query_sequence text, aligned_target_sequence text, "
+            "query_begin int, query_end int, target_begin int, target_end_optimal int)"
+        )
+    )
+    connection.commit()
+
+    # create index
+    cursor.execute("CREATE INDEX id_idx on sequences(id)")
     connection.commit()
 
     tot_seq_nb = 0
     final_results = []
 
     # header
-    '''
+    """
     print(("id\tdescription\tframe\tidentity\tscore\talign_length\ttarget_length\t"
            "aligned_query_sequence\taligned_target_sequence\tquery_begin\tquery_end\t"
            "target_begin\ttarget_end_optimal"), file=output_file)
-    '''
+    """
 
     if not list_of_files:
         tot_seq_nb += align_file(target_file)
@@ -241,7 +261,7 @@ def main():
                 if target_file2:
                     tot_seq_nb += align_file(target_file2)
 
-    '''
+    """
     # sort by score descending
     final_results.sort(key=lambda x:x[4], reverse=True)
 
@@ -249,28 +269,63 @@ def main():
         print("\t".join([str(x) for x in result]), file=output_file)
 
     output_file.close()
-    '''
+    """
 
     print(f"{tot_seq_nb} sequence(s) found in database.", file=sys.stderr)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(prog="SW",
-                                     description="Alignment of a sequence against database with the Smith-Waterman algorithm.",
-                                     usage=("sw.py -q QUERY_PATH -t TARGET_PATH -c N_CORES -o OUTPUT_PATH"
-                                            "\nor:\n"
-                                            "cat my_database.dtb | sw -q QUERY_PATH -t - -f DB_FORMAT -c N_CORES -o OUTPUT_PATH"
-                                           )
-                                    )
-    parser.add_argument("-q", "--query", action="store", dest="query", type=str, help="Path of the query file (FASTA format)")
-    parser.add_argument("-t", "--target", action='store', dest="target", type=str, help="Path of the target sequences (FASTA format)")
-    parser.add_argument("-f", "--db-format", action='store', dest="db_format", type=str, help="Format of the database (embl or fasta), only for stdin")
-    parser.add_argument("-c", "--cpu", action="store", dest="cpu", default=16, type=int, help="Set number of CPU/cores to use (default all)")
+    parser = argparse.ArgumentParser(
+        prog="SW",
+        description="Alignment of a sequence against database with the Smith-Waterman algorithm.",
+        usage=(
+            "sw.py -q QUERY_PATH -t TARGET_PATH -c N_CORES -o OUTPUT_PATH"
+            "\nor:\n"
+            "cat my_database.dtb | sw -q QUERY_PATH -t - -f DB_FORMAT -c N_CORES -o OUTPUT_PATH"
+        ),
+    )
+    parser.add_argument(
+        "-q", "--query", action="store", dest="query", type=str, help="Path of the query file (FASTA format)"
+    )
+    parser.add_argument(
+        "-t", "--target", action="store", dest="target", type=str, help="Path of the target sequences (FASTA format)"
+    )
+    parser.add_argument(
+        "-f",
+        "--db-format",
+        action="store",
+        dest="db_format",
+        type=str,
+        help="Format of the database (embl or fasta), only for stdin",
+    )
+    parser.add_argument(
+        "-c",
+        "--cpu",
+        action="store",
+        dest="cpu",
+        default=16,
+        type=int,
+        help="Set number of CPU/cores to use (default all)",
+    )
     parser.add_argument("-o", "--output", action="store", dest="output", type=str, help="Set path for the output file")
-    parser.add_argument("-v", "--version", action='version', version=f"%(prog)s v.{__version__} {__version_date__} (c) Olivier Friard 2021", help="Display the help")
-    parser.add_argument("--min-align-len", action='store', dest="min_align_len", type=float, help="Minimal length of alignment (0-100%% of query length)")
-    parser.add_argument("--min-identity", action='store', dest="min_identity", type=float, help="Minimal identity (0-100%%)")
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=f"%(prog)s v.{__version__} {__version_date__} (c) Olivier Friard 2021",
+        help="Display the help",
+    )
+    parser.add_argument(
+        "--min-align-len",
+        action="store",
+        dest="min_align_len",
+        type=float,
+        help="Minimal length of alignment (0-100%% of query length)",
+    )
+    parser.add_argument(
+        "--min-identity", action="store", dest="min_identity", type=float, help="Minimal identity (0-100%%)"
+    )
 
     MIN_ALIGN_LENGTH: float = 0.5
     MIN_IDENTITY: float = 0.5
@@ -278,30 +333,30 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if not args.query:
-        print('Query file not specified!', file=sys.stderr)
+        print("Query file not specified!", file=sys.stderr)
         sys.exit(1)
     else:
         query_file = args.query
         if not pl.Path(query_file).is_file():
-            print('Query file not found!', file=sys.stderr)
+            print("Query file not found!", file=sys.stderr)
             sys.exit(1)
 
     # database
     if not args.target:
-        print('Target file not specified!', file=sys.stderr)
+        print("Target file not specified!", file=sys.stderr)
         sys.exit(1)
     else:
         target_file = args.target
-        if target_file == '-':  # read on stdin
+        if target_file == "-":  # read on stdin
             target_file = sys.stdin
             if args.db_format:
                 db_format = args.db_format.lower()
-            if not args.db_format or db_format not in ('embl', 'fasta'):
-                print('The database format was not specified! Use FASTA or EMBL formats', file=sys.stderr)
+            if not args.db_format or db_format not in ("embl", "fasta"):
+                print("The database format was not specified! Use FASTA or EMBL formats", file=sys.stderr)
                 sys.exit(1)
         else:
             if not pl.Path(target_file).is_file():
-                print('Target file not found!', file=sys.stderr)
+                print("Target file not found!", file=sys.stderr)
                 sys.exit(1)
 
             # check DB format
@@ -310,14 +365,14 @@ if __name__ == '__main__':
             with open(target_file, "r") as f:
                 content = f.read(4)
                 if content.startswith(">"):
-                    db_format = 'fasta'
+                    db_format = "fasta"
                 if content.startswith("ID "):
-                    db_format = 'embl'
+                    db_format = "embl"
                 if content.startswith("/"):  # file is list of files
                     list_of_files = True
 
             if not db_format and not list_of_files:
-                print('Database format not recognized! Use FASTA or EMBL formats', file=sys.stderr)
+                print("Database format not recognized! Use FASTA or EMBL formats", file=sys.stderr)
                 sys.exit(1)
 
             # check db_format in case of list of file
@@ -328,17 +383,15 @@ if __name__ == '__main__':
                         with open(line.strip().split(" ")[0]) as f_in2:
                             content = f_in2.read(4)
                             if content.startswith("ID "):
-                                db_format = 'embl'
+                                db_format = "embl"
                                 break
                             if content.startswith(">"):
-                                db_format = 'fasta'
+                                db_format = "fasta"
                                 break
 
                 if not db_format:
-                    print('Database format not recognized! Use FASTA or EMBL formats', file=sys.stderr)
+                    print("Database format not recognized! Use FASTA or EMBL formats", file=sys.stderr)
                     sys.exit(1)
-
-
 
     if not args.cpu:
         n_cpu = cpu_count()
@@ -362,27 +415,29 @@ if __name__ == '__main__':
     else:
         MIN_IDENTITY = MIN_IDENTITY_DEFAULT
 
-
     # read the query sequence from argv #1
     for record in SeqIO.parse(query_file, "fasta"):
         query_id = record.id
         query_sequence = str(record.seq)
         query_sequence_length = len(query_sequence)
 
-    query = StripedSmithWaterman(query_sequence,
-                                 zero_index=True,
-                                 gap_open_penalty=GAP_OPEN_PENALTY,
-                                 gap_extend_penalty=GAP_EXTEND_PENALTY,
-                                 match_score=MATCH_SCORE,
-                                 mismatch_score=MISMATCH_SCORE)
+    query = StripedSmithWaterman(
+        query_sequence,
+        zero_index=True,
+        gap_open_penalty=GAP_OPEN_PENALTY,
+        gap_extend_penalty=GAP_EXTEND_PENALTY,
+        match_score=MATCH_SCORE,
+        mismatch_score=MISMATCH_SCORE,
+    )
 
     query_sequence_revcomp = str(Seq(query_sequence).reverse_complement())
-    query_revcomp = StripedSmithWaterman(query_sequence_revcomp,
-                                         zero_index=True,
-                                         gap_open_penalty=GAP_OPEN_PENALTY,
-                                         gap_extend_penalty=GAP_EXTEND_PENALTY,
-                                         match_score=MATCH_SCORE,
-                                         mismatch_score=MISMATCH_SCORE)
+    query_revcomp = StripedSmithWaterman(
+        query_sequence_revcomp,
+        zero_index=True,
+        gap_open_penalty=GAP_OPEN_PENALTY,
+        gap_extend_penalty=GAP_EXTEND_PENALTY,
+        match_score=MATCH_SCORE,
+        mismatch_score=MISMATCH_SCORE,
+    )
 
     main()
-
