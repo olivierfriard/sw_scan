@@ -538,17 +538,14 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                         else:
                             id_descr = id_dict[seq][0]
 
-                        while len(id_descr) < max_id_len + 5:
-                            id_descr += " "
+                        id_descr += " " * (max_id_len + 5 - len(id_descr))
 
                         out += id_descr
                         out += cleaned_seq[seq] + "\n"
 
                     else:
                         for id in id_dict[seq]:
-                            id_descr = id
-                            while len(id_descr) < max_id_len + 5:
-                                id_descr += " "
+                            id_descr = id + " " * (max_id_len + 5 - len(id_descr))
                             out += id_descr
                             out += cleaned_seq[seq] + "\n"
 
