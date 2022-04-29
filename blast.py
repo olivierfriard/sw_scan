@@ -14,6 +14,7 @@ WS_DEFAULT = 16
 MAX_TARGET_SEQS = 10_000_000
 E_VALUE = 10_000
 BLAST_COMMAND = "blastn"
+TMP_DIR = "/data/tmp"
 
 """
 available fields are:
@@ -22,11 +23,10 @@ id  description frame identity score align_length  target_length aligned_query_s
 
 PARAMETERS = "sseqid stitle sframe pident score length slen qseq sseq qstart qend sstart send evalue bitscore"
 
+tmp_output_name = str(pl.Path(TMP_DIR) / uuid.uuid4())
 
-TMP_OUTPUT_NAME = str(uuid.uuid4())
-
-__version__ = "1"
-__version_date__ = "2022-03-15"
+__version__ = "2"
+__version_date__ = "2022-04-29"
 
 parser = argparse.ArgumentParser(
     prog="BLAST wrapper", description="BLAST", usage=("blast.py -q QUERY_PATH -t TARGET_PATH -c N_CORES -o OUTPUT_PATH")
@@ -61,7 +61,7 @@ command = [
     "-word_size",
     str(WS_DEFAULT),
     "-out",
-    TMP_OUTPUT_NAME,
+    tmp_output_name,
     "-outfmt",
     f"6 {PARAMETERS}",
 ]
@@ -103,8 +103,8 @@ subprocess.run(command)
 
 subprocess.run(["sqlite3", args.output, "CREATE INDEX id_idx on sequences(id)"])
 
-subprocess.run(["sqlite3", args.output, ".mode tabs", f".import {TMP_OUTPUT_NAME} sequences"])
+subprocess.run(["sqlite3", args.output, ".mode tabs", f".import {tmp_output_name} sequences"])
 
 
-if pl.Path(f"{TMP_OUTPUT_NAME}").is_file():
-    os.remove(f"{TMP_OUTPUT_NAME}")
+if pl.Path(f"{tmp_output_name}").is_file():
+    os.remove(f"{tmp_output_name}")
