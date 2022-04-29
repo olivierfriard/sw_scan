@@ -11,7 +11,7 @@ import pathlib as pl
 import os
 import uuid
 
-WS_DEFAULT = 16
+WS_DEFAULT = 10
 MAX_TARGET_SEQS = 10_000_000
 E_VALUE = 10_000
 BLAST_COMMAND = "blastn"
@@ -24,7 +24,7 @@ id  description frame identity score align_length  target_length aligned_query_s
 
 PARAMETERS = "sseqid stitle sframe pident score length slen qseq sseq qstart qend sstart send evalue bitscore"
 
-tmp_output_name = str(pl.Path(TMP_DIR) / uuid.uuid4())
+tmp_output_name = str(pl.Path(TMP_DIR) / str(uuid.uuid4()))
 
 __version__ = "2"
 __version_date__ = "2022-04-29"
