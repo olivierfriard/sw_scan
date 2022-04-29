@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/python-3.8.11/bin/python3
 
 """
 Align a query sequence with the smith-waterman algorithm (skbio) with sequences from a multi fasta file or EMBL format (see ENA)
