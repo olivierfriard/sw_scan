@@ -1,3 +1,4 @@
+#!/opt/python-3.8.11/bin/python3
 """
 Wrapper for BLAST
 
