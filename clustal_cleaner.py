@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/opt/python-3.8.11/bin/python3
 
 """
 CLUSTAL Cleaner
@@ -10,6 +10,9 @@ Clear the CLUSTAL output and position sequences from a FASTA file
 -g               group the sequences that are identical
 --consensus n    print a consensus sequence at n%
 --stars          print a star when all nucleotides are identical
+
+
+
 
 """
 
@@ -27,61 +30,6 @@ from Bio import AlignIO
 from Bio.Seq import Seq
 from Bio import SeqIO
 
-<<<<<<< HEAD
-IUPAC_nt_codes = {
-    "A": "A",
-    "C": "C",
-    "G": "G",
-    "T": "T",
-    "AG": "R",
-    "CT": "Y",
-    "CG": "S",
-    "AT": "W",
-    "GT": "K",
-    "AC": "M",
-    "CGT": "B",
-    "AGT": "D",
-    "ACT": "H",
-    "ACG": "V",
-    "ACGT": "N",
-}
-
-
-IUPAC_degenerated = {
-    "-": "-",
-    "A": "A",
-    "C": "C",
-    "G": "G",
-    "T": "T",
-    "R": "AG",
-    "Y": "CT",
-    "S": "CG",
-    "W": "AT",
-    "K": "GT",
-    "M": "AC",
-    "B": "CGT",
-    "D": "AGT",
-    "H": "ACT",
-    "V": "ACG",
-    "N": "ACGT",
-}
-
-
-parser = argparse.ArgumentParser(
-    description="Clustal Cleaner",
-)
-
-parser.add_argument("-i", action="store", dest="input", help="CLUSTAL alignment file")
-parser.add_argument("-m", action="store", dest="model", help="Reference sequence")
-parser.add_argument(
-    "-s", action="store", dest="sequence_file", help="FASTA file containing the sequences to position on the alignment"
-)
-parser.add_argument("-g", action="store_true", dest="group", help="Group sequences when identical")
-parser.add_argument(
-    "--stars", action="store_true", dest="stars", help="Print stars when nucleotides are identical on column"
-)
-parser.add_argument("--consensus", action="store", dest="consensus", help="Print a consensus sequence (in percent)")
-=======
 IUPAC_nt_codes = {'A': 'A',
                   'C': 'C',
                   'G': 'G',
@@ -134,7 +82,6 @@ SPAN_OPEN = {"": '<span style="background-color: yellow">',
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Clustal Cleaner',)
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
 
     parser.add_argument('-v', action="store_true", dest="version", help="Print version of CLUSTAL Cleaner")
     parser.add_argument('-i', action="store", dest="input", help="CLUSTAL alignment file")
@@ -159,8 +106,6 @@ def parse_arguments():
         print("Input file not specified!", file=sys.stderr)
         sys.exit(1)
 
-<<<<<<< HEAD
-=======
     if not pl.Path(args.input).is_file:
         print("File not found", file=sys.stderr)
         sys.exit(2)
@@ -168,7 +113,6 @@ def parse_arguments():
     return args
 
 
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
 def read_seq_from_clustal(file_path: str):
     """
     read sequences from CLUSTAL alignment whith BioPython AlignIO.read function
@@ -266,19 +210,11 @@ def align_sub_sequences(args):
 
     return seq2position, seq_idx, polarity
 
-<<<<<<< HEAD
-SPAN_F_OPEN = '<span style="background-color: yellow">'
-SPAN_CLOSE = "</span>"
-SPAN_R_OPEN = '<span style="background-color: lime">'
-
-SPAN_OPEN = {"": '<span style="background-color: yellow">', " (rev-comp)": '<span style="background-color: lime">'}
-=======
 
 def reference_seq():
 
     # reference sequence
     o = ref_id + (" " * (max_len_id - len(ref_id) + ROW_HEADER_ID))
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
 
 
     stars = list(ref_seq)
@@ -324,127 +260,34 @@ def display_sub_sequences(sequences, seq2position, seq_idx, polarity):
     # pre-header for seq names
     pre_header = " " * [len(sequences[k]) for k in sequences][0]
     for seq_id in seq_idx:
-<<<<<<< HEAD
-        pre_header = (
-            pre_header[0 : seq_idx[seq_id]]
-            + seq_id
-            + polarity[seq_id]
-            + header[seq_idx[seq_id] + len(seq_id + polarity[seq_id]) :]
-        )
-    print(" " * (max_len_id + ROW_HEADER_ID), end="")
-    print(pre_header)
-=======
         pre_header = pre_header[0:seq_idx[seq_id]] + seq_id + polarity[seq_id] + header[seq_idx[seq_id] + len(seq_id + polarity[seq_id]):]
     # print(" " * (max_len_id + ROW_HEADER_ID), end="")
     o += " " * (max_len_id + ROW_HEADER_ID)
     
     # print(pre_header)
     o += pre_header
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
 
     # position
     for seq_id in seq_idx:
-        header_out = (
-            header_out[0 : seq_idx[seq_id]]
-            + seq2position[seq_id]
-            + header[seq_idx[seq_id] + len(seq2position[seq_id]) :]
-        )
+        header_out = header_out[0:seq_idx[seq_id]] + seq2position[seq_id]  + header[seq_idx[seq_id] + len(seq2position[seq_id]):]
 
     # colorize
     for seq_id in seq_idx:
-        header_out = header_out.replace(
-            seq2position[seq_id], SPAN_OPEN[polarity[seq_id]] + seq2position[seq_id] + SPAN_CLOSE
-        )
+        header_out = header_out.replace(seq2position[seq_id], SPAN_OPEN[polarity[seq_id]] + seq2position[seq_id] + SPAN_CLOSE)
 
     o += '\n' + (" " * (max_len_id + ROW_HEADER_ID)) + header_out
 
     return o
 
-<<<<<<< HEAD
-stars = list(ref_seq)
-if args.consensus:
-    # initialize consensus with reference sequence
-    consensus = {}
-    for idx, nt in enumerate(ref_seq):
-        if idx not in consensus:
-            consensus[idx] = {}
-        consensus[idx][nt] = 1
-
-ref_seq_out = ref_seq
-if args.sequence_file:
-    for seq_id in seq_idx:
-        ref_seq_out = ref_seq_out.replace(
-            seq2position[seq_id], SPAN_OPEN[polarity[seq_id]] + seq2position[seq_id] + SPAN_CLOSE
-        )
-
-print(ref_seq_out)
-
-
-for id in sequences:
-
-    seq = sequences[id]
-
-    cleaned_seq = ""
-    for idx, nt in enumerate(seq):
-        if nt == ref_seq[idx]:
-            cleaned_seq += "."
-        else:
-            cleaned_seq += nt
-=======
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
 
 def clean_sequences():
 
-<<<<<<< HEAD
-        # consensus
-        if args.consensus:
-            # if idx not in consensus:
-            #    consensus[idx] = {}
-            for nt2 in IUPAC_degenerated[nt]:
-                if nt2 not in consensus[idx]:
-                    consensus[idx][nt2] = 1 / len(IUPAC_degenerated[nt])
-                else:
-                    consensus[idx][nt2] += 1 / len(IUPAC_degenerated[nt])
-
-    if args.sequence_file:
-        target = {}
-        for seq_id in seq_idx:
-            target[seq_id] = ""
-            for idx, nt in enumerate(seq[seq_idx[seq_id] : seq_idx[seq_id] + len(seq2position[seq_id])]):
-                if nt == seq2position[seq_id][idx]:
-                    target[seq_id] += "."
-                else:
-                    target[seq_id] += nt
-=======
     o = ""
 
     for id in sequences:
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
 
         seq = sequences[id]
 
-<<<<<<< HEAD
-    output = cleaned_seq
-    if args.sequence_file:
-        count = 0
-        for seq_id in seq_idx:
-            output = (
-                output[0 : seq_idx[seq_id]]
-                + (str(count) * len(target[seq_id]))
-                + output[seq_idx[seq_id] + len(seq2position[seq_id]) :]
-            )
-            count += 1
-            if count == 10:
-                print("too many sequences to position (<10)", file=sys.stderr)
-                sys.exit()
-
-        count = 0
-        for seq_id in seq_idx:
-            output = output.replace(
-                str(count) * len(target[seq_id]), SPAN_OPEN[polarity[seq_id]] + target[seq_id] + SPAN_CLOSE
-            )
-            count += 1
-=======
         cleaned_seq = ""
         for idx, nt in enumerate(seq):
             if nt in IUPAC_degenerated[ref_seq[idx]] and nt != '-':
@@ -500,81 +343,45 @@ def clean_sequences():
             for seq_id in seq_idx:
                 output = output.replace(str(count) * len(target[seq_id]), SPAN_OPEN[polarity[seq_id]] + target[seq_id] + SPAN_CLOSE)
                 count += 1
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
 
         #print(output)
         o += output + "\n"
 
-<<<<<<< HEAD
-# print *
-if args.stars:
-    print()
-    print(" " * (max_len_id + ROW_HEADER_ID), end="")
-    for nt in stars:
-        if nt == " ":
-            print(nt, end="")
-        else:
-            print("*", end="")
-    print()
-
-# print(consensus)
-=======
     return o
 
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
 
 def make_consensus():
 
     o = ""
     row_header = f"{args.consensus}%"
 
-<<<<<<< HEAD
-    print(" " * (max_len_id - len(row_header) + ROW_HEADER_ID), end="")
-=======
     o += row_header
 
     o += " " * (max_len_id - len(row_header)  + ROW_HEADER_ID)
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
 
     for idx in sorted(consensus.keys()):
 
         print(f"{idx=}", file=sys.stderr)
 
-<<<<<<< HEAD
-        print(f"{consensus[idx]}", file=sys.stderr)
-=======
         print(f"{consensus[idx]=}", file=sys.stderr)
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
 
         total = sum([consensus[idx][k] for k in consensus[idx]])
-        # print(total)
+        #print(total)
 
         for nt in consensus[idx]:
-            # print(consensus[idx][nt] / total)
-            # print(int(args.consensus) / 100)
+            #print(consensus[idx][nt] / total)
+            #print(int(args.consensus) / 100)
             if consensus[idx][nt] / total >= int(args.consensus) / 100:
                 # print(nt, end="")
                 o += nt
                 break
         else:
 
-<<<<<<< HEAD
-            # print("X", end="")
-            # continue
-
-            # print degenerated nt
-            print(f"{consensus[idx]}", file=sys.stderr)
-=======
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
             nt_list = list(consensus[idx])
             print(f"{nt_list=}", file=sys.stderr)
 
             # remove gap '-'
-<<<<<<< HEAD
-            # nt_list.remove('-')
-=======
             #nt_list.remove('-')
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
 
             flag_stop = False
             # test 
@@ -585,23 +392,14 @@ def make_consensus():
                 for c in itertools.combinations(nt_list, n):
                     print(f"{c=}", file=sys.stderr)
 
-<<<<<<< HEAD
-                    if "-" in c:
-                        print("-", end="")
-=======
                     '''
                     if '-' in c:
                         print('-', end="")
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
                         flag_stop = True
                         break
                     '''
 
                     if sum([consensus[idx][k] for k in c]) / total >= int(args.consensus) / 100:
-<<<<<<< HEAD
-                        # print(c, end="")
-                        print(IUPAC_nt_codes["".join(sorted(c))], end="")
-=======
                         #print(c, end="")
                         if '-' in c:
                             c_list = list(c)
@@ -615,21 +413,15 @@ def make_consensus():
                             #print(IUPAC_nt_codes["".join(sorted(c))], end="")
                             o += IUPAC_nt_codes["".join(sorted(c))]
 
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
                         flag_stop = True
                         break
 
                 if flag_stop:
                     break
 
-<<<<<<< HEAD
-            # print(IUPAC_nt_codes[code], end="")
-        # print(total)
-=======
     return o
 
 
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
 
 def display_stars():
     o = ""
@@ -695,7 +487,3 @@ else:
 
 display()
 
-<<<<<<< HEAD
-print("</pre></body></html>")
-=======
->>>>>>> 03557bb984bbc621f9c92727a8cd738f61969d45
