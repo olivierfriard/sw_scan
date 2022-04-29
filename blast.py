@@ -39,6 +39,7 @@ parser.add_argument("-t", "--target", action="store", dest="target", type=str, h
 
 # parser.add_argument("-c", "--cpu", action="store", dest="cpu", default=16, type=int, help="Set number of CPU/cores to use (default all)")
 parser.add_argument("-o", "--output", action="store", dest="output", type=str, help="Set path for the output file")
+
 parser.add_argument(
     "-v",
     "--version",
