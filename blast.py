@@ -38,7 +38,7 @@ parser.add_argument(
 )
 parser.add_argument("-t", "--target", action="store", dest="target", type=str, help="division")
 
-parser.add_argument("-w", "--ws", action="store", dest="ws", type=int, help="word size")
+parser.add_argument("-w", "--ws", action="store", dest="ws",  default=WS_DEFAULT, type=int, help="word size")
 
 parser.add_argument("-c", "--cpu", action="store", dest="cpu", default=8, type=int, help="Set number of CPU/cores to use (default 8)")
 
