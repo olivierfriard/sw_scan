@@ -435,8 +435,6 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             while q.next():
                 duplicate_seq_id.append(f"{q.value('id')}")
 
-        print(f"{duplicate_seq_id=}")
-
         # get max length of id and description
         q = QtSql.QSqlQuery(
             f"SELECT MAX(length(id) + length(description)) AS max_id_descr_len FROM sequences {conditions}"

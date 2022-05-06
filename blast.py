@@ -5,6 +5,7 @@ Wrapper for BLAST
 The BLAST TSV results file is converted to a sqlite database
 """
 
+import sys
 import subprocess
 import argparse
 import pathlib as pl
@@ -26,7 +27,7 @@ PARAMETERS = "sseqid stitle sframe pident score length slen qseq sseq qstart qen
 
 tmp_output_name = str(pl.Path(TMP_DIR) / str(uuid.uuid4()))
 
-__version__ = "2"
+__version__ = "3"
 __version_date__ = "2022-04-29"
 
 parser = argparse.ArgumentParser(
@@ -37,7 +38,10 @@ parser.add_argument(
 )
 parser.add_argument("-t", "--target", action="store", dest="target", type=str, help="division")
 
-# parser.add_argument("-c", "--cpu", action="store", dest="cpu", default=16, type=int, help="Set number of CPU/cores to use (default all)")
+parser.add_argument("-w", "--ws", action="store", dest="ws", type=int, help="word size")
+
+parser.add_argument("-c", "--cpu", action="store", dest="cpu", default=8, type=int, help="Set number of CPU/cores to use (default 8)")
+
 parser.add_argument("-o", "--output", action="store", dest="output", type=str, help="Set path for the output file")
 
 parser.add_argument(
@@ -50,6 +54,31 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+if not args.query:
+    print("The query is missing.")
+    sys.exit()
+
+
+if not args.target:
+    print("The database is missing.")
+    sys.exit()
+
+
+if not args.output:
+    print("The output file is missing.")
+    sys.exit()
+
+# check if tmp dir exists
+if not pl.Path(TMP_DIR).is_dir():
+    print(f"The temporary directory {TMP_DIR} does not exist")
+    sys.exit()
+
+if args.ws:
+    word_size = args.ws
+else:
+    word_size = WS_DEFAULT
+
+
 command = [
     BLAST_COMMAND,
     "-db",
@@ -61,12 +90,16 @@ command = [
     "-max_target_seqs",
     str(MAX_TARGET_SEQS),
     "-word_size",
-    str(WS_DEFAULT),
+    str(word_size),
     "-out",
     tmp_output_name,
+    "-num_threads",
+    str(args.cpu),
     "-outfmt",
     f"6 {PARAMETERS}",
 ]
+
+print(command)
 
 subprocess.run(command)
 
