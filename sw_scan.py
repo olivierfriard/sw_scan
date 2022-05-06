@@ -1,4 +1,4 @@
-#!/opt/python-3.8.11/bin/python3
+#!/opt/python-3.8.11/bin/python3q
 
 """
 Display and filter results of the sw (SQLite version) and the blast.py programs
