@@ -38,11 +38,18 @@ parser.add_argument(
 )
 parser.add_argument("-t", "--target", action="store", dest="target", type=str, help="division")
 
-parser.add_argument("-w", "--ws", action="store", dest="ws",  default=WS_DEFAULT, type=int, help="word size")
+parser.add_argument("-w", "--ws", action="store", dest="ws", default=WS_DEFAULT, type=int, help="word size")
 
-parser.add_argument("-c", "--cpu", action="store", dest="cpu", default=8, type=int, help="Set number of CPU/cores to use (default 8)")
+parser.add_argument(
+    "-c", "--cpu", action="store", dest="cpu", default=8, type=int, help="Set number of CPU/cores to use (default 8)"
+)
 
 parser.add_argument("-o", "--output", action="store", dest="output", type=str, help="Set path for the output file")
+
+
+parser.add_argument(
+    "--temp", action="store", dest="temp", default=TMP_DIR, type=str, help="Set path for the temporary directory"
+)
 
 parser.add_argument(
     "-v",
@@ -78,6 +85,8 @@ if args.ws:
 else:
     word_size = WS_DEFAULT
 
+if args.temp != TMP_DIR:
+    TMP_DIR = args.temp
 
 command = [
     BLAST_COMMAND,
