@@ -25,7 +25,6 @@ id  description frame identity score align_length  target_length aligned_query_s
 
 PARAMETERS = "sseqid stitle sframe pident score length slen qseq sseq qstart qend sstart send evalue bitscore"
 
-tmp_output_name = str(pl.Path(TMP_DIR) / str(uuid.uuid4()))
 
 __version__ = "3"
 __version_date__ = "2022-04-29"
@@ -88,6 +87,7 @@ if args.ws:
 else:
     word_size = WS_DEFAULT
 
+tmp_output_name = str(pl.Path(TMP_DIR) / str(uuid.uuid4()))
 
 command = [
     BLAST_COMMAND,
