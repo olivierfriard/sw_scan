@@ -75,6 +75,9 @@ if not args.output:
     print("The output file is missing.")
     sys.exit()
 
+if args.temp != TMP_DIR:
+    TMP_DIR = args.temp
+
 # check if tmp dir exists
 if not pl.Path(TMP_DIR).is_dir():
     print(f"The temporary directory {TMP_DIR} does not exist")
@@ -85,8 +88,6 @@ if args.ws:
 else:
     word_size = WS_DEFAULT
 
-if args.temp != TMP_DIR:
-    TMP_DIR = args.temp
 
 command = [
     BLAST_COMMAND,
