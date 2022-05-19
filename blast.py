@@ -26,8 +26,8 @@ id  description frame identity score align_length  target_length aligned_query_s
 PARAMETERS = "sseqid stitle sframe pident score length slen qseq sseq qstart qend sstart send evalue bitscore"
 
 
-__version__ = "3"
-__version_date__ = "2022-04-29"
+__version__ = "4"
+__version_date__ = "2022-05-19"
 
 parser = argparse.ArgumentParser(
     prog="BLAST wrapper", description="BLAST", usage=("blast.py -q QUERY_PATH -t TARGET_PATH -c N_CORES -o OUTPUT_PATH")
