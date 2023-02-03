@@ -16,8 +16,8 @@ Clear the CLUSTAL output and position sequences from a FASTA file
 
 """
 
-__version__ = "6"
-__version_date__ = "2022-04-29"
+__version__ = "7"
+__version_date__ = "2023-02-03"
 
 ROW_HEADER_ID = 10
 
