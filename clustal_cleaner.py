@@ -253,7 +253,7 @@ def reference_seq(args, ref_seq, ref_id, max_len_id, seq2position, seq_idx, pola
     return o, consensus, stars
 
 
-def display_sub_sequences(sequences, seq2position, seq_idx, polarity):
+def display_sub_sequences(sequences, seq2position, seq_idx, polarity, max_len_id):
 
     # header
     header = " " * [len(sequences[k]) for k in sequences][0]
@@ -294,7 +294,7 @@ def display_sub_sequences(sequences, seq2position, seq_idx, polarity):
     return o
 
 
-def clean_sequences(args, seq_idx, sequences, seq2position, ref_seq, consensus, stars, max_len_id):
+def clean_sequences(args, seq_idx, sequences, seq2position, ref_seq, consensus, stars, max_len_id, polarity):
 
     o = ""
 
@@ -471,14 +471,14 @@ def main():
     # sequences to position
     if args.sequence_file:
         seq2position, seq_idx, polarity = align_sub_sequences(args, sequences)
-        PRIMERS_PROBES = display_sub_sequences(sequences, seq2position, seq_idx, polarity)
+        PRIMERS_PROBES = display_sub_sequences(sequences, seq2position, seq_idx, polarity, max_len_id)
     else:
         seq2position, seq_idx, polarity = None, None, None
         PRIMERS_PROBES = ""
 
     REF_SEQ, consensus, stars = reference_seq(args, ref_seq, ref_id, max_len_id, seq2position, seq_idx, polarity)
 
-    SEQUENCES = clean_sequences(args, seq_idx, sequences, seq2position, ref_seq, consensus, stars, max_len_id)
+    SEQUENCES = clean_sequences(args, seq_idx, sequences, seq2position, ref_seq, consensus, stars, max_len_id, polarity)
 
     if args.stars:
         STARS = display_stars(args, stars, max_len_id)
