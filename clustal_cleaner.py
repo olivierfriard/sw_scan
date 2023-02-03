@@ -179,7 +179,7 @@ def read_seq_from_clustal(args):
     return error_msg, sequences, ref_seq, ref_id, max_len_id
 
 
-def align_sub_sequences(args):
+def align_sub_sequences(args, sequences):
 
     if not pl.Path(args.sequence_file).is_file():
         print(f"Sequence file not found: {args.sequence_file}\n", file=sys.stderr)
@@ -470,7 +470,7 @@ def main():
 
     # sequences to position
     if args.sequence_file:
-        seq2position, seq_idx, polarity = align_sub_sequences(args)
+        seq2position, seq_idx, polarity = align_sub_sequences(args, sequences)
         PRIMERS_PROBES = display_sub_sequences(sequences, seq2position, seq_idx, polarity)
     else:
         seq2position, seq_idx, polarity = None, None, None
