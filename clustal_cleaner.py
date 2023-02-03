@@ -3,13 +3,14 @@
 """
 CLUSTAL Cleaner
 
-(c) Olivier Friard 2021-2022
+(c) Olivier Friard 2021-2023
 
 Clear the CLUSTAL output and position sequences from a FASTA file
 
 -g               group the sequences that are identical
 --consensus n    print a consensus sequence at n%
 --stars          print a star when all nucleotides are identical
+-s primers.seq   position and highlight primer/probe sequences
 
 
 
