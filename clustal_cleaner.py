@@ -103,7 +103,7 @@ def parse_arguments():
     args = parser.parse_args()
 
     if args.version:
-        print("CLUSTAL Cleaner\n(c) Olivier Friard 2021-2022")
+        print("CLUSTAL Cleaner\n(c) Olivier Friard 2021-2023")
         print(f"v. {__version__} ({__version_date__})\n")
         sys.exit()
 
