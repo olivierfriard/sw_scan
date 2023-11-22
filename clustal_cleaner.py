@@ -13,21 +13,18 @@ Clear the CLUSTAL output and position sequences from a FASTA file
 -s primers.seq   position and highlight primer/probe sequences
 
 
-
-
 """
 
 import sys
 import pathlib as pl
 import argparse
 import itertools
-
 from Bio import AlignIO
 from Bio.Seq import Seq
 from Bio import SeqIO
 
 
-__version__ = "8"
+__version__ = "9"
 __version_date__ = "2023-11-22"
 
 ROW_HEADER_ID = 10
@@ -127,14 +124,17 @@ def read_seq_from_clustal(args):
     read sequences from CLUSTAL alignment whith BioPython AlignIO.read function
     """
 
-    align = AlignIO.read(args.input, "clustal")
+    if pl.Path(args.input).suffix == ".aln":
+        align = AlignIO.read(args.input, "clustal")
+    else:
+        align = SeqIO.parse(args.input, "fasta")
 
-    ref_seq = ""
-    ref_id = ""
-    max_len_id = 0
-    group = {}
+    ref_seq: str = ""
+    ref_id: str = ""
+    max_len_id: str = 0
+    group: dict = {}
+    sequences: dict = {}
 
-    sequences = {}
     for seq in align:
         if seq.id.upper() == args.model.upper():
             ref_seq = str(seq.seq).upper()

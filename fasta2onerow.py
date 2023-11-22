@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 """
-convert multi-row fasta fiel in a one-row fasta file
+convert multi-row fasta file in a one-row fasta file
+
+Dependency:
+Biopython
 
 Usage:
-
 python3 fasta2onerow.py MULTI_ROWS_FASTA_FILE > ONE_ROW_FASTA_FILE
 
 """
@@ -19,4 +21,3 @@ for record in SeqIO.parse(handle, "fasta"):
     print(f">{record.description}\n{record.seq}")
 
 handle.close()
-
