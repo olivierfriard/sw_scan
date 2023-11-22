@@ -14,7 +14,7 @@ import datetime
 COUNT_FILE_PATH = "/home/dbarberis/conta_sequenze.txt"
 
 ena_path = sys.argv[1]
-
+"""
 for section in init.ena_sections:
     for type in ["STD", "PAT"]:
         idx = 1
@@ -46,7 +46,7 @@ for section in init.ena_sections:
             idx += 1
             if idx >= 1000:
                 break
-
+"""
 # count number of sequences
 os.system(f"rm -f '{COUNT_FILE_PATH}'")
 os.system(f"""for f in {ena_path}/*.fasta; do echo -n "$f " >> '{COUNT_FILE_PATH}'; grep -c '>' $f >> '{COUNT_FILE_PATH}' ; done""")
