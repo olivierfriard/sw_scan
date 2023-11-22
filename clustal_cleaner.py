@@ -1,4 +1,4 @@
-#!/opt/python-3.8.11/bin/python3
+#!python3
 
 """
 CLUSTAL Cleaner
@@ -197,7 +197,7 @@ def align_sub_sequences(args, sequences):
             if seq2position[record.id] in sequences[id]:
                 seq_idx[record.id] = sequences[id].index(seq2position[record.id])
                 polarity[record.id] = ""
-                print(f"FOUND", file=sys.stderr)
+                print("FOUND", file=sys.stderr)
                 break
         else:
             # search rev-comp
@@ -208,10 +208,10 @@ def align_sub_sequences(args, sequences):
                 if seq2position[record.id] in sequences[id]:
                     seq_idx[record.id] = sequences[id].index(seq2position[record.id])
                     polarity[record.id] = " (rev-comp)"
-                    print(f"FOUND", file=sys.stderr)
+                    print("FOUND", file=sys.stderr)
                     break
             else:
-                print(f"NOT FOUND", file=sys.stderr)
+                print("NOT FOUND", file=sys.stderr)
 
     return seq2position, seq_idx, polarity
 
