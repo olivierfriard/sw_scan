@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 
 """
-CLUSTAL Cleaner
+Multi-Alignment Cleaner
 
 (c) Olivier Friard 2021-2023
 
-Clear the CLUSTAL output and position sequences from a FASTA file
+Clean multi-alignment (CLUSTAL or MUSCLE output) and position sequences from a FASTA file
 
 -g               group the sequences that are identical
 --consensus n    print a consensus sequence at n%
