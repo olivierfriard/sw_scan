@@ -4,7 +4,12 @@
 Display and filter results of the sw (SQLite version) and the blast.py programs
 See https://github.com/olivierfriard/sw_scan
 
-(c) Olivier Friard 2021-2022
+(c) Olivier Friard 2021-2023
+
+v.9
+-------
+Fix bug when SQL contains 2 conditions with OR
+Fix bug in FBS output when sequences were not grouped
 
 
 v.8
@@ -51,8 +56,8 @@ FIELDS_NAME = (
 SEQ_ORDER = " ORDER BY identity DESC "
 
 
-__version__ = "8"
-__version_date__ = "2022-04-19"
+__version__ = "9"
+__version_date__ = "2023-11-24"
 
 
 class SW_Scan(QMainWindow, Ui_MainWindow):
@@ -403,12 +408,14 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             return
 
         print("Saving sequences in FBS format")
-        self.statusBar().showMessage(f"Saving FBS file")
+        self.statusBar().showMessage("Saving FBS file")
         self.frame.setEnabled(False)
 
         t1 = time.time()
         while time.time() - t1 < 1:
             app.processEvents()
+
+        # print(f"{self.sql2=}")
 
         t1 = time.time()
         if self.sql2:
@@ -426,11 +433,12 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         # get max length of id and description
         q = QtSql.QSqlQuery(f"SELECT MAX(length(id) + length(description)) AS max_id_descr_len FROM sequences {conditions}")
         if not q.exec_():
-            self.statusBar().showMessage(f"SQL error")
+            self.statusBar().showMessage("SQL error")
 
         q.first()
         max_id_len = q.value("max_id_descr_len")
 
+        # number of unique sequences
         q = QtSql.QSqlQuery(f"SELECT count(distinct aligned_query_sequence) as n FROM sequences {conditions}")
         if q.exec_():
             q.first()
@@ -441,7 +449,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 f"SELECT DISTINCT aligned_query_sequence FROM sequences {conditions} ORDER BY score DESC, LENGTH(aligned_query_sequence) DESC"
             )
             if not q.exec_():
-                self.statusBar().showMessage(f"SQL error")
+                self.statusBar().showMessage("SQL error")
 
             count = 0
             out = ""
@@ -453,7 +461,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 out += "query" + (" " * (max_id_len + 5 - 5)) + q.value("aligned_query_sequence") + "\n"
                 count += 1
                 if conditions:
-                    conditions2 = " AND " + conditions.replace("WHERE", "")
+                    conditions2 = f' AND ({conditions.replace("WHERE", "")})'
                 else:
                     conditions2 = ""
 
@@ -466,10 +474,10 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 q2 = QtSql.QSqlQuery(query2)
 
                 if not q2.exec_():
-                    self.statusBar().showMessage(f"SQL error in q2")
+                    self.statusBar().showMessage("SQL error in q2")
 
-                id_dict = {}
-                cleaned_seq = {}
+                id_dict: dict = {}
+                cleaned_seq: dict = {}
 
                 while q2.next():
                     # remove id if contained in description (for BLAST output)
@@ -495,6 +503,9 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                         id_dict[aligned_target_sequence] = [id_descr]
                     else:
                         id_dict[aligned_target_sequence].append(id_descr)
+
+                    print(f"{q.value('aligned_query_sequence')=}")
+                    print(f"{q2.value('aligned_query_sequence')=}")
 
                     formated_aligned_target_sequence = (
                         " " * q2.value("aligned_query_sequence").index(q.value("aligned_query_sequence"))
@@ -526,7 +537,8 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
                     else:
                         for id in id_dict[seq]:
-                            id_descr = id + " " * (max_id_len + 5 - len(id_descr))
+                            # id_descr = id + " " * (max_id_len + 5 - len(id_descr))
+                            id_descr = id + " " * (max_id_len + 5 - len(id))
                             out += id_descr
                             out += cleaned_seq[seq] + "\n"
 
@@ -535,7 +547,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             f_out.write(out)
 
         print(f"Sequences saved in FBS format in {round(time.time() - t1)} s")
-        self.statusBar().showMessage(f"Saving FBS file done")
+        self.statusBar().showMessage("Saving FBS file done")
         self.frame.setEnabled(True)
 
 
