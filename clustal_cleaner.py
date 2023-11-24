@@ -81,11 +81,11 @@ GREEN = '<span style="background-color: lime">'
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
-        description="CLUSTAL Cleaner",
+        description="Multi-Alignment Cleaner",
     )
 
-    parser.add_argument("-v", action="store_true", dest="version", help="Print version of CLUSTAL Cleaner")
-    parser.add_argument("-i", action="store", dest="input", help="CLUSTAL alignment file")
+    parser.add_argument("-v", action="store_true", dest="version", help="Print version of Multi-Alignment Cleaner")
+    parser.add_argument("-i", action="store", dest="input", help="Multi-alignment file (.aln for CLUSTAL)")
     parser.add_argument("-m", action="store", dest="model", help="Reference sequence")
     parser.add_argument(
         "-s",
@@ -100,7 +100,7 @@ def parse_arguments():
     args = parser.parse_args()
 
     if args.version:
-        print("CLUSTAL Cleaner\n(c) Olivier Friard 2021-2023")
+        print("Multi-Alignment Cleaner\n(c) Olivier Friard 2021-2023")
         print(f"v. {__version__} ({__version_date__})\n")
         sys.exit()
 
@@ -121,7 +121,9 @@ def parse_arguments():
 
 def read_seq_from_clustal(args):
     """
-    read sequences from CLUSTAL alignment whith BioPython AlignIO.read function
+    read sequences from Multi-Alignment Alignment whith BioPython
+    AlignIO.read function for CLUSTAL alignment
+    SeqIO.parse for aligned FASTA files
     """
 
     if pl.Path(args.input).suffix == ".aln":
@@ -174,7 +176,7 @@ def read_seq_from_clustal(args):
 
     # verif seq len
     if len(set([len(sequences[k]) for k in sequences])) != 1:
-        error_msg = "error reading the CLUSTAL output. Different sequence lengths were found"
+        error_msg = "error reading the multi-alignment output. Different sequence lengths were found"
 
     return error_msg, sequences, ref_seq, ref_id, max_len_id
 
@@ -441,7 +443,7 @@ def display_stars(args, stars, max_len_id: int) -> str:
 def display(HTML_HEADER, CONSENSUS, PRIMERS_PROBES, REF_SEQ, SEQUENCES, STARS, HTML_FOOTER):
     print(HTML_HEADER)
 
-    print(f"CLUSTAL Cleaner v. {__version__} ({__version_date__}) by Olivier Friard<br><br>")
+    print(f"Multi-Alignment Cleaner v. {__version__} ({__version_date__}) by Olivier Friard<br><br>")
 
     print(CONSENSUS)
 
