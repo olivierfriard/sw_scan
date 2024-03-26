@@ -4,7 +4,12 @@
 Display and filter results of the sw (SQLite version) and the blast.py programs
 See https://github.com/olivierfriard/sw_scan
 
-(c) Olivier Friard 2021-2023
+(c) Olivier Friard 2021-2024
+
+v.10
+-------
+
+Added .sql file with filter conditions when saving TSV, FBS and FASTA file
 
 v.9
 -------
@@ -36,7 +41,6 @@ import sys
 import time
 import traceback
 
-
 FIELDS_NAME = (
     "accession",
     "description",
@@ -56,8 +60,8 @@ FIELDS_NAME = (
 SEQ_ORDER = " ORDER BY identity DESC "
 
 
-__version__ = "9"
-__version_date__ = "2023-11-24"
+__version__ = "10"
+__version_date__ = "2024-03-26"
 
 
 class SW_Scan(QMainWindow, Ui_MainWindow):
@@ -65,11 +69,12 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         super(SW_Scan, self).__init__(parent)
 
         self.setupUi(self)
+        self.input_file_name = input_file_name
 
         sys.excepthook = self.excepthook
 
         self.setWindowTitle(f"SW Scan v.{__version__}")
-        self.lb_copyright.setText("(c) 2021-2022 Olivier Friard")
+        self.lb_copyright.setText("(c) 2021-2024 Olivier Friard")
         self.initialize_var()
         self.connections()
         app.processEvents()
@@ -93,7 +98,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         errorbox.setTextFormat(QtCore.Qt.RichText)
         errorbox.setStandardButtons(QMessageBox.Abort)
 
-        continueButton = errorbox.addButton("Ignore and try to continue", QMessageBox.RejectRole)
+        # continueButton = errorbox.addButton("Ignore and try to continue", QMessageBox.RejectRole)
 
         ret = errorbox.exec_()
 
@@ -130,7 +135,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         about_dialog.setInformativeText(
             (
                 f"<b>SW Scan</b> v. {__version__} - {__version_date__}"
-                "<p>&copy; 2021-2022 Olivier Friard<br>"
+                "<p>&copy; 2021-2024 Olivier Friard<br>"
                 "Department of Life Sciences and Systems Biology<br>"
                 "University of Torino - Italy<br>"
             )
@@ -194,7 +199,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         if self.file_name == "":
             return
 
-        self.statusBar().showMessage(f"Filtering sequences")
+        self.statusBar().showMessage("Filtering sequences")
 
         id = self.le_id.text().upper() if self.le_id.text() else ""
         description1 = self.le_description1.text().upper() if self.le_description1.text() else ""
@@ -257,7 +262,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         Run SQL query defined by user
         """
         if self.pte_sql.toPlainText():
-            self.statusBar().showMessage(f"Running query")
+            self.statusBar().showMessage("Running query")
             self.frame.setEnabled(False)
             app.processEvents()
             t1 = time.time()
@@ -276,7 +281,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
         else:
             self.sql2 = ""
-            self.statusBar().showMessage(f"No query to run")
+            self.statusBar().showMessage("No query to run")
 
     def save_fasta(self):
         """
@@ -302,8 +307,8 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                     while q.next():
                         duplicate_seq_id.append(f"{q.value('id')}_{q.value('frame')}")
 
-                print(f"saving sequences in FASTA format {conditions}")
-                self.statusBar().showMessage(f"Saving sequences in FASTA format. Please wait...")
+                print(f"Saving sequences in FASTA format {conditions} in {file_name}")
+                self.statusBar().showMessage(f"Saving sequences in FASTA format in {file_name}. Please wait...")
                 self.frame.setEnabled(False)
                 t1 = time.time()
                 while time.time() - t1 < 1:
@@ -328,10 +333,17 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                             )
                             duplicate_seq_id.append(f"{q.value('id')}_{q.value('frame')}#{id}")
 
-                print(f"Saving sequences in FASTA format done")
+                print(f"Saving sequences in FASTA format in {file_name} done")
                 self.statusBar().showMessage(f"Sequences saved in FASTA format in {file_name}")
 
-        except:
+            # save .sql file with applied query
+            with open(file_name + ".sql", "w") as f_out:
+                f_out.write(
+                    f"--- The file {file_name} was produced by sw_scan applying the following query on the {self.input_file_name} file ---\n"
+                )
+                f_out.write(f"SELECT * FROM sequences {conditions} {self.le_order.text()}\n")
+
+        except Exception:
             QMessageBox.critical(
                 self,
                 "SW Scan",
@@ -355,8 +367,8 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 else:
                     conditions = ""
 
-                print(f"saving sequences in FASTA format {conditions}")
-                self.statusBar().showMessage(f"Saving TSV file. Please wait")
+                print(f"Saving sequences in FASTA format {conditions} in {file_name}")
+                self.statusBar().showMessage(f"Saving TSV file in {file_name}. Please wait")
                 self.frame.setEnabled(False)
                 t1 = time.time()
                 while time.time() - t1 < 1:
@@ -372,12 +384,19 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                             file=f_out,
                         )
 
-            self.statusBar().showMessage(f"Saving TSV file done")
+            # save .sql file with applied query
+            with open(file_name + ".sql", "w") as f_out:
+                f_out.write(
+                    f"--- The file {file_name} was produced by sw_scan applying the following query on the {self.input_file_name} file ---\n"
+                )
+                f_out.write(f"SELECT * FROM sequences {conditions} {self.le_order.text()}\n")
+
+            self.statusBar().showMessage(f"Saving TSV file done ({file_name})")
         except Exception:
             QMessageBox.critical(
                 self,
                 "SW Scan",
-                ("An error occured during the file saving operation."),
+                (f"An error occured during the file saving operation in {file_name}."),
             )
         self.frame.setEnabled(True)
 
@@ -407,8 +426,8 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         if not file_name:
             return
 
-        print("Saving sequences in FBS format")
-        self.statusBar().showMessage("Saving FBS file")
+        print(f"Saving sequences in FBS format in {file_name}")
+        self.statusBar().showMessage(f"Saving FBS file in {file_name}")
         self.frame.setEnabled(False)
 
         t1 = time.time()
@@ -546,8 +565,15 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
             f_out.write(out)
 
+        # save .sql file with applied query
+        with open(file_name + ".sql", "w") as f_out:
+            f_out.write(
+                f"--- The file {file_name} was produced by sw_scan with the following query on the {self.input_file_name} file ---\n"
+            )
+            f_out.write(f"SELECT * FROM sequences {conditions} {self.le_order.text()}\n")
+
         print(f"Sequences saved in FBS format in {round(time.time() - t1)} s")
-        self.statusBar().showMessage("Saving FBS file done")
+        self.statusBar().showMessage(f"Saving FBS file done in {file_name}")
         self.frame.setEnabled(True)
 
 
