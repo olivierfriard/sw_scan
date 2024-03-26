@@ -209,23 +209,52 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
         self.sql2 = ""
         if id:
-            self.sql2 += f" `id` LIKE '%{id}%' "
+            if "|" in id:  # OR
+                or_linked: str = ""
+                for term in id.split("|"):
+                    if or_linked:
+                        or_linked += " OR "
+                    or_linked += f" `id` LIKE '%{term}%' "
+                self.sql2 += " AND " if self.sql2 else ""
+                self.sql2 += f" ({or_linked}) "
+
+            else:
+                for term in id.split(","):
+                    self.sql2 += " AND " if self.sql2 else ""
+                    self.sql2 += f" `id` LIKE '%{term}%' "
 
         if description1:
-            for term in description1.split(","):
-                if self.sql2:
-                    self.sql2 += " AND "
-                self.sql2 += f" description LIKE '%{term}%' "
+            if "|" in description1:  # OR
+                or_linked: str = ""
+                for term in description1.split("|"):
+                    if or_linked:
+                        or_linked += " OR "
+                    or_linked += f" description LIKE '%{term}%' "
+                self.sql2 += " AND " if self.sql2 else ""
+                self.sql2 += f" ({or_linked}) "
+
+            else:  # AND
+                for term in description1.split(","):
+                    self.sql2 += " AND " if self.sql2 else ""
+                    self.sql2 += f" description LIKE '%{term}%' "
 
         if description2:
-            for term in description2.split(","):
-                if self.sql2:
-                    self.sql2 += " AND "
-                self.sql2 += f" description NOT LIKE '%{term}%' "
+            if "|" in description1:  # OR
+                or_linked: str = ""
+                for term in description1.split("|"):
+                    if or_linked:
+                        or_linked += " OR "
+                    or_linked += f" description NOT LIKE '%{term}%' "
+                self.sql2 += " AND " if self.sql2 else ""
+                self.sql2 += f" ({or_linked}) "
+
+            else:  # AND
+                for term in description2.split(","):
+                    self.sql2 += " AND " if self.sql2 else ""
+                    self.sql2 += f" description NOT LIKE '%{term}%' "
 
         if identity_pc:
-            if self.sql2:
-                self.sql2 += " AND "
+            self.sql2 += " AND " if self.sql2 else ""
             self.sql2 += f" identity {self.cb_identity_relation.currentText()} {identity_pc} "
 
         if min_align_length:
