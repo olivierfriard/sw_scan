@@ -64,11 +64,12 @@ FIELDS_NAME = (
     "target_end_optimal",
 )
 
-SEQ_ORDER = " ORDER BY identity DESC "
-
-
 __version__ = "10"
 __version_date__ = "2024-03-26"
+
+
+SEQ_ORDER = " ORDER BY identity DESC "
+MAX_DESCRIPTION_LEN = 150
 
 
 class SW_Scan(QMainWindow, Ui_MainWindow):
@@ -591,10 +592,6 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                             id_descr = id_dict[seq][0]
 
                         id_list.append(id_descr)
-                        # id_descr += " " * (max_id_len + 5 - len(id_descr))
-                        # out += id_descr
-
-                        # out += cleaned_seq[seq] + "\n"
                         seq_list.append(cleaned_seq[seq])
 
                     else:
@@ -602,21 +599,20 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                             id_descr = id
                             id_list.append(id_descr)
 
-                            # id_descr += " " * (max_id_len + 5 - len(id))
-                            # out += id_descr
-
-                            # out += cleaned_seq[seq] + "\n"
                             seq_list.append(cleaned_seq[seq])
 
-                # out += "\n\n"
                 id_list.extend(["", ""])
                 seq_list.extend(["", ""])
 
             max_id_descr_len = max([len(x) for x in id_list])
             print(f"{max_id_descr_len=}", file=sys.stderr)
 
+            # set description max len
+            max_id_descr_len = min(max_id_descr_len, MAX_DESCRIPTION_LEN)
+
             for id, seq in zip(id_list, seq_list):
                 if id:
+                    id = id[:max_id_descr_len]
                     f_out.write(id + " " * (max_id_descr_len + 5 - len(id)) + seq + "\n")
                 else:
                     f_out.write("\n")
