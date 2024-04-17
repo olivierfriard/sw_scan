@@ -1,9 +1,4 @@
 .vscode
 __pycache__
-.gitignore
-<<<<<<< HEAD
 .python-version
-=======
 .venv
->>>>>>> 3d9ea086af86746cc5ab8429bfcbabdf81b2bca7
-
