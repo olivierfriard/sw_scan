@@ -12,6 +12,7 @@ v.11
 
 Fixed bug when "Description does not contain" field contains a |
 Added reference sequence to group
+Added limitation to description length
 
 v.10
 -------
@@ -64,8 +65,8 @@ FIELDS_NAME = (
     "target_end_optimal",
 )
 
-__version__ = "10"
-__version_date__ = "2024-03-26"
+__version__ = "11"
+__version_date__ = "2024-04-17"
 
 
 SEQ_ORDER = " ORDER BY identity DESC "
