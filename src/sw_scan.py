@@ -81,7 +81,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         sys.excepthook = self.excepthook
 
         self.setWindowTitle(f"SW Scan v.{__version__}")
-        self.lb_copyright.setText("(c) 2021-2024 Olivier Friard")
+        self.lb_copyright.setText("(c) 2021-2024 Olivier Friard \u2605")
         self.initialize_var()
         self.connections()
         app.processEvents()
@@ -142,7 +142,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         about_dialog.setInformativeText(
             (
                 f"<b>SW Scan</b> v. {__version__} - {__version_date__}"
-                "<p>&copy; 2021-2024 Olivier Friard<br>"
+                "<p>&copy; 2021-2024 Olivier Friard \u2605<br>"
                 "Department of Life Sciences and Systems Biology<br>"
                 "University of Torino - Italy<br>"
             )
@@ -637,10 +637,10 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    file_name: str = ""
     if len(sys.argv) > 1:
         file_name = sys.argv[1]
-    else:
-        file_name = ""
+
     program = SW_Scan(file_name)
     program.show()
     program.raise_()
