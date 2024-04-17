@@ -6,6 +6,12 @@ See https://github.com/olivierfriard/sw_scan
 
 (c) Olivier Friard 2021-2024
 
+
+v.11
+-------
+
+Fixed bug when "Description does not contain" field contains a |
+
 v.10
 -------
 
@@ -207,7 +213,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         identity_pc = float(self.le_identity.text()) if self.le_identity.text() else 0
         min_align_length = int(self.le_align_length.text()) if self.le_align_length.text() else 0
 
-        self.sql2 = ""
+        self.sql2: str = ""
         if id:
             if "|" in id:  # OR
                 or_linked: str = ""
@@ -239,9 +245,9 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                     self.sql2 += f" description LIKE '%{term}%' "
 
         if description2:
-            if "|" in description1:  # OR
+            if "|" in description2:  # OR
                 or_linked: str = ""
-                for term in description1.split("|"):
+                for term in description2.split("|"):
                     if or_linked:
                         or_linked += " OR "
                     or_linked += f" description NOT LIKE '%{term}%' "
@@ -445,7 +451,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
     def save_fbs(self):
         """
-        Export sequences in query anchored format
+        Export sequences in query anchored format (FBS format)
         """
 
         flag_group = self.message_dialog("SW Scan", "Group identical sequences?", ["Yes", "No"]) == "Yes"
@@ -463,8 +469,6 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         while time.time() - t1 < 1:
             app.processEvents()
 
-        # print(f"{self.sql2=}")
-
         t1 = time.time()
         if self.sql2:
             conditions = f"WHERE {self.sql2}"
@@ -479,12 +483,14 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 duplicate_seq_id.append(f"{q.value('id')}")
 
         # get max length of id and description
+        """
         q = QtSql.QSqlQuery(f"SELECT MAX(length(id) + length(description)) AS max_id_descr_len FROM sequences {conditions}")
         if not q.exec_():
             self.statusBar().showMessage("SQL error")
 
         q.first()
         max_id_len = q.value("max_id_descr_len")
+        """
 
         # number of unique sequences
         q = QtSql.QSqlQuery(f"SELECT count(distinct aligned_query_sequence) as n FROM sequences {conditions}")
@@ -499,14 +505,18 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             if not q.exec_():
                 self.statusBar().showMessage("SQL error")
 
-            count = 0
-            out = ""
-            count_group = 1
+            count: int = 0
+            # out: str = ""
+            id_list: list = []
+            seq_list: list = []
+            count_group: int = 1
             while q.next():
                 self.statusBar().showMessage(f"Saving FBS file {count} / {n_distinct_aligned_query}")
                 app.processEvents()
 
-                out += "query" + (" " * (max_id_len + 5 - 5)) + q.value("aligned_query_sequence") + "\n"
+                # out += "query" + (" " * (max_id_len + 5 - 5)) + q.value("aligned_query_sequence") + "\n"
+                id_list.append("query")
+                seq_list.append(q.value("aligned_query_sequence"))
                 count += 1
                 if conditions:
                     conditions2 = f' AND ({conditions.replace("WHERE", "")})'
@@ -533,12 +543,12 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
                     if q2.value("id") in duplicate_seq_id:
                         # duplicate sequence
-                        print(q2.value("id"), "duplicate")
+                        print(q2.value("id"), "duplicate", file=sys.stderr)
                         idx = 1
                         while f"{q2.value('id')}#{idx}" in duplicate_seq_id:
                             idx += 1
                         id_ = f"{q2.value('id')}#{idx}"
-                        print("replaced by", id_)
+                        print("replaced by", id_, file=sys.stderr)
                         duplicate_seq_id.append(id_)
                     else:
                         id_ = q2.value("id")
@@ -552,14 +562,14 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                     else:
                         id_dict[aligned_target_sequence].append(id_descr)
 
-                    print(f"{q.value('aligned_query_sequence')=}")
-                    print(f"{q2.value('aligned_query_sequence')=}")
+                    print(f"{q.value('aligned_query_sequence')=}", file=sys.stderr)
+                    print(f"{q2.value('aligned_query_sequence')=}", file=sys.stderr)
 
                     formated_aligned_target_sequence = (
                         " " * q2.value("aligned_query_sequence").index(q.value("aligned_query_sequence"))
                     ) + aligned_target_sequence
 
-                    ats = ""
+                    ats: str = ""
                     for nq, nt in zip(q.value("aligned_query_sequence"), formated_aligned_target_sequence):
                         if nq == nt:
                             ats += "."
@@ -573,26 +583,44 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 for seq in id_dict:
                     if flag_group:
                         if len(id_dict[seq]) > 1:
-                            id_descr = f"group #{count_group} ({len(id_dict[seq]):,} seq)"
+                            ref_seq = id_dict[seq][0]
+                            id_descr = f"group #{count_group} ({len(id_dict[seq]):,} seq)  ref: {ref_seq}"
                             count_group += 1
                         else:
                             id_descr = id_dict[seq][0]
 
-                        id_descr += " " * (max_id_len + 5 - len(id_descr))
+                        id_list.append(id_descr)
+                        # id_descr += " " * (max_id_len + 5 - len(id_descr))
+                        # out += id_descr
 
-                        out += id_descr
-                        out += cleaned_seq[seq] + "\n"
+                        # out += cleaned_seq[seq] + "\n"
+                        seq_list.append(cleaned_seq[seq])
 
                     else:
                         for id in id_dict[seq]:
-                            # id_descr = id + " " * (max_id_len + 5 - len(id_descr))
-                            id_descr = id + " " * (max_id_len + 5 - len(id))
-                            out += id_descr
-                            out += cleaned_seq[seq] + "\n"
+                            id_descr = id
+                            id_list.append(id_descr)
 
-                out += "\n\n"
+                            # id_descr += " " * (max_id_len + 5 - len(id))
+                            # out += id_descr
 
-            f_out.write(out)
+                            # out += cleaned_seq[seq] + "\n"
+                            seq_list.append(cleaned_seq[seq])
+
+                # out += "\n\n"
+                id_list.extend(["", ""])
+                seq_list.extend(["", ""])
+
+            max_id_descr_len = max([len(x) for x in id_list])
+            print(f"{max_id_descr_len=}", file=sys.stderr)
+
+            for id, seq in zip(id_list, seq_list):
+                if id:
+                    f_out.write(id + " " * (max_id_descr_len + 5 - len(id)) + seq + "\n")
+                else:
+                    f_out.write("\n")
+
+            # f_out.write(out)
 
         # save .sql file with applied query
         with open(file_name + ".sql", "w") as f_out:
