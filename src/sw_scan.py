@@ -11,6 +11,7 @@ v.11
 -------
 
 Fixed bug when "Description does not contain" field contains a |
+Added reference sequence to group
 
 v.10
 -------
