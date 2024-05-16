@@ -5,8 +5,8 @@ Align a query sequence with the smith-waterman algorithm (skbio) with sequences 
 (c) Olivier Friard
 """
 
-__version__ = "7"
-__version_date__ = "2022-02-15"
+__version__ = "8"
+__version_date__ = "2024-05-16"
 
 import os
 from multiprocessing import Pool, cpu_count
@@ -39,7 +39,6 @@ alignment.optimal_alignment_score     alignment.suboptimal_alignment_score
 
 
 def output(id, description, alignment):
-
     # remove id from description
     description = description.replace(id, "").strip()
 
@@ -61,7 +60,6 @@ def output(id, description, alignment):
 
 
 def align(input):  # target_seq, target_id, target_description):
-
     target_seq, target_id, target_description = input
     result = []
 
@@ -114,10 +112,7 @@ def align(input):  # target_seq, target_id, target_description):
             "target_end_optimal": ssw_alignment.target_end_optimal,
         }
         if MIN_IDENTITY or MIN_ALIGN_LENGTH:
-            if (
-                alignment_f["identity"] >= MIN_IDENTITY
-                and alignment_f["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH
-            ):
+            if alignment_f["identity"] >= MIN_IDENTITY and alignment_f["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH:
                 result.append(output(target_id, target_description, alignment_f))
         else:
             result.append(output(target_id, target_description, alignment_f))
@@ -173,10 +168,7 @@ def align(input):  # target_seq, target_id, target_description):
         }
 
         if MIN_IDENTITY or MIN_ALIGN_LENGTH:
-            if (
-                alignment_r["identity"] >= MIN_IDENTITY
-                and alignment_r["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH
-            ):
+            if alignment_r["identity"] >= MIN_IDENTITY and alignment_r["align_length"] / query_sequence_length >= MIN_ALIGN_LENGTH:
                 result.append(output(target_id, target_description, alignment_r))
         else:
             result.append(output(target_id, target_description, alignment_r))
@@ -185,25 +177,24 @@ def align(input):  # target_seq, target_id, target_description):
 
 
 def align_mp(seq_list):
-
     with Pool(n_cpu) as p:
         results = p.map(align, seq_list)
     return results
 
 
 def main():
-    def align_file(target_file):
+    def align_file(target_file: str) -> int:
         """
         align sequences from file by chunk of MP_MAX_SEQUENCES_NUMBER sequences
         """
 
-        count = 0
-        seq_number = 0
-        seq_list = []
+        count: int = 0
+        seq_number: int = 0
+        seq_list: list = []
         for record in SeqIO.parse(target_file, db_format):
             seq_number += 1
             count += 1
-            seq_list.append((str(record.seq), record.id, record.description))
+            seq_list.append((str(record.seq).upper(), record.id, record.description))
             if count == MP_MAX_SEQUENCES_NUMBER:
                 count = 0
                 results = align_mp(seq_list)
@@ -243,14 +234,6 @@ def main():
     connection.commit()
 
     tot_seq_nb = 0
-    final_results = []
-
-    # header
-    """
-    print(("id\tdescription\tframe\tidentity\tscore\talign_length\ttarget_length\t"
-           "aligned_query_sequence\taligned_target_sequence\tquery_begin\tquery_end\t"
-           "target_begin\ttarget_end_optimal"), file=output_file)
-    """
 
     if not list_of_files:
         tot_seq_nb += align_file(target_file)
@@ -261,21 +244,10 @@ def main():
                 if target_file2:
                     tot_seq_nb += align_file(target_file2)
 
-    """
-    # sort by score descending
-    final_results.sort(key=lambda x:x[4], reverse=True)
-
-    for result in final_results:
-        print("\t".join([str(x) for x in result]), file=output_file)
-
-    output_file.close()
-    """
-
     print(f"{tot_seq_nb} sequence(s) found in database.", file=sys.stderr)
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(
         prog="SW",
         description="Alignment of a sequence against database with the Smith-Waterman algorithm.",
@@ -285,12 +257,8 @@ if __name__ == "__main__":
             "cat my_database.dtb | sw -q QUERY_PATH -t - -f DB_FORMAT -c N_CORES -o OUTPUT_PATH"
         ),
     )
-    parser.add_argument(
-        "-q", "--query", action="store", dest="query", type=str, help="Path of the query file (FASTA format)"
-    )
-    parser.add_argument(
-        "-t", "--target", action="store", dest="target", type=str, help="Path of the target sequences (FASTA format)"
-    )
+    parser.add_argument("-q", "--query", action="store", dest="query", type=str, help="Path of the query file (FASTA format)")
+    parser.add_argument("-t", "--target", action="store", dest="target", type=str, help="Path of the target sequences (FASTA format)")
     parser.add_argument(
         "-f",
         "--db-format",
@@ -323,9 +291,7 @@ if __name__ == "__main__":
         type=float,
         help="Minimal length of alignment (0-100%% of query length)",
     )
-    parser.add_argument(
-        "--min-identity", action="store", dest="min_identity", type=float, help="Minimal identity (0-100%%)"
-    )
+    parser.add_argument("--min-identity", action="store", dest="min_identity", type=float, help="Minimal identity (0-100%%)")
 
     MIN_ALIGN_LENGTH: float = 0.5
     MIN_IDENTITY: float = 0.5
@@ -418,7 +384,7 @@ if __name__ == "__main__":
     # read the query sequence from argv #1
     for record in SeqIO.parse(query_file, "fasta"):
         query_id = record.id
-        query_sequence = str(record.seq)
+        query_sequence = str(record.seq).upper()
         query_sequence_length = len(query_sequence)
 
     query = StripedSmithWaterman(
