@@ -24,8 +24,8 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 
 
-__version__ = "9"
-__version_date__ = "2023-11-22"
+__version__ = "10"
+__version_date__ = "2024-05-16"
 
 ROW_HEADER_ID = 10
 
@@ -186,34 +186,35 @@ def align_sub_sequences(args, sequences):
         print(f"Sequence file not found: {args.sequence_file}\n", file=sys.stderr)
         sys.exit(2)
 
-    handle = open(args.sequence_file, "r")
-    seq2position = {}
-    seq_idx = {}
-    polarity = {}
+    with open(args.sequence_file, "r") as handle:
+        seq2position: dict = {}
+        seq_idx: dict = {}
+        polarity: dict = {}
 
-    for record in SeqIO.parse(handle, "fasta"):
-        seq2position[record.id] = str(record.seq)
-        print(f"Sequence to position {record.id} {seq2position[record.id]} ->  ", end="", file=sys.stderr)
-        # search sequence
-        for id in sequences:
-            if seq2position[record.id] in sequences[id]:
-                seq_idx[record.id] = sequences[id].index(seq2position[record.id])
-                polarity[record.id] = ""
-                print("FOUND", file=sys.stderr)
-                break
-        else:
-            # search rev-comp
-            print("NOT FOUND", file=sys.stderr)
-            seq2position[record.id] = str(Seq(seq2position[record.id]).reverse_complement())
-            print(f"rev-comp sequence to position {record.id} {seq2position[record.id]} ->  ", end="", file=sys.stderr)
+        for record in SeqIO.parse(handle, "fasta"):
+            seq_id = record.description
+            seq2position[seq_id] = str(record.seq)
+            print(f"Sequence to position {seq_id} {seq2position[seq_id]} ->  ", end="", file=sys.stderr)
+            # search sequence
             for id in sequences:
-                if seq2position[record.id] in sequences[id]:
-                    seq_idx[record.id] = sequences[id].index(seq2position[record.id])
-                    polarity[record.id] = " (rev-comp)"
+                if seq2position[seq_id] in sequences[id]:
+                    seq_idx[seq_id] = sequences[id].index(seq2position[seq_id])
+                    polarity[seq_id] = ""
                     print("FOUND", file=sys.stderr)
                     break
             else:
+                # search rev-comp
                 print("NOT FOUND", file=sys.stderr)
+                seq2position[seq_id] = str(Seq(seq2position[seq_id]).reverse_complement())
+                print(f"rev-comp sequence to position {seq_id} {seq2position[seq_id]} ->  ", end="", file=sys.stderr)
+                for id in sequences:
+                    if seq2position[seq_id] in sequences[id]:
+                        seq_idx[seq_id] = sequences[id].index(seq2position[seq_id])
+                        polarity[seq_id] = " (rev-comp)"
+                        print("FOUND", file=sys.stderr)
+                        break
+                else:
+                    print("NOT FOUND", file=sys.stderr)
 
     return seq2position, seq_idx, polarity
 
@@ -242,7 +243,6 @@ def reference_seq(args, ref_seq, ref_id, max_len_id, seq2position, seq_idx, pola
 
     ref_seq_out = ref_seq
     if args.sequence_file:
-        print(f"{seq_idx=}")
         for idx, seq_id in enumerate(seq_idx):
             if idx == 0 or idx == 2:
                 color = YELLOW
