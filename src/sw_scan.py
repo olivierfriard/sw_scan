@@ -6,6 +6,13 @@ See https://github.com/olivierfriard/sw_scan
 
 (c) Olivier Friard 2021-2024
 
+v.12
+-------
+
+Fixed bug when duplicate id saved in FASTA format
+Added option to exclude duplicate id from FASTA format
+Improved saving in FASTA format delay
+
 
 v.11
 -------
@@ -48,6 +55,7 @@ from sw_scan_ui import Ui_MainWindow
 import sys
 import time
 import traceback
+from hashlib import blake2b
 
 FIELDS_NAME = (
     "accession",
@@ -65,8 +73,8 @@ FIELDS_NAME = (
     "target_end_optimal",
 )
 
-__version__ = "11"
-__version_date__ = "2024-04-17"
+__version__ = "12"
+__version_date__ = "2024-09-11"
 
 
 SEQ_ORDER = " ORDER BY identity DESC "
@@ -83,7 +91,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         sys.excepthook = self.excepthook
 
         self.setWindowTitle(f"SW Scan v.{__version__}")
-        self.lb_copyright.setText("(c) 2021-2024 Olivier Friard \u2605")
+        self.lb_copyright.setText("(c) 2021-2024 Olivier Friard")
         self.initialize_var()
         self.connections()
         app.processEvents()
@@ -144,7 +152,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         about_dialog.setInformativeText(
             (
                 f"<b>SW Scan</b> v. {__version__} - {__version_date__}"
-                "<p>&copy; 2021-2024 Olivier Friard \u2605<br>"
+                "<p>&copy; 2021-2024 Olivier Friard<br>"
                 "Department of Life Sciences and Systems Biology<br>"
                 "University of Torino - Italy<br>"
             )
@@ -180,7 +188,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.model.select()
 
         t2 = time.time()
-        print("file loading time: ", t2 - t1)
+        print(f"file loading time: {round((t2 - t1) * 1000, 3)} ms")
 
         q = QtSql.QSqlQuery("SELECT count(*) as n FROM sequences")
         if q.exec_():
@@ -286,7 +294,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
         self.model.setFilter(self.sql)
         self.model.select()
         t2 = time.time()
-        print("filter:", t2 - t1)
+        print(f"filter: {round((t2 - t1) * 1000, 3)} ms")
 
         q = QtSql.QSqlQuery(f"SELECT count(*) as n FROM sequences WHERE {self.sql2}")
         if q.exec_():
@@ -332,46 +340,51 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             return
         try:
             # save sequences
+            if self.sql2:
+                conditions = f"WHERE {self.sql2}"
+            else:
+                conditions = ""
+
+            print(f"Saving sequences in FASTA format {conditions} in {file_name}")
+            self.statusBar().showMessage(f"Saving sequences in FASTA format in {file_name}. Please wait...")
+            self.frame.setEnabled(False)
+            t1 = time.time()
+            while time.time() - t1 < 1:
+                app.processEvents()
+
             with open(file_name, "w") as f_out:
-                if self.sql2:
-                    conditions = f"WHERE {self.sql2}"
-                else:
-                    conditions = ""
-
                 # check for duplicates sequence id
-                duplicate_seq_id = []
-                q = QtSql.QSqlQuery(f"SELECT id, frame FROM sequences {conditions} GROUP BY id HAVING COUNT(id) > 1")
-                if q.exec_():
-                    while q.next():
-                        duplicate_seq_id.append(f"{q.value('id')}_{q.value('frame')}")
+                q = QtSql.QSqlQuery(
+                    f"SELECT id, frame, aligned_target_sequence, COUNT(*) as n_seq FROM sequences {conditions} GROUP BY id, frame, aligned_target_sequence"
+                )
 
-                print(f"Saving sequences in FASTA format {conditions} in {file_name}")
-                self.statusBar().showMessage(f"Saving sequences in FASTA format in {file_name}. Please wait...")
-                self.frame.setEnabled(False)
                 t1 = time.time()
-                while time.time() - t1 < 1:
-                    app.processEvents()
-
-                q = QtSql.QSqlQuery(f"SELECT id, frame, aligned_target_sequence FROM sequences {conditions} {self.le_order.text()}")
                 if q.exec_():
                     while q.next():
-                        if f"{q.value('id')}_{q.value('frame')}" not in duplicate_seq_id:
+                        h = blake2b(digest_size=6)
+                        h.update(bytes(q.value("aligned_target_sequence"), "utf-8"))
+                        checksum = h.hexdigest()
+
+                        if q.value("n_seq") == 1:
                             print(
-                                f">{q.value('id')}_{q.value('frame')}\n{q.value('aligned_target_sequence').replace('-', '')}",
+                                f">{q.value('id')}_{q.value('frame')}_{checksum}\n{q.value('aligned_target_sequence').replace('-', '')}",
                                 file=f_out,
                             )
                         else:
-                            # duplicate sequence
-                            id = 1
-                            while f"{q.value('id')}_{q.value('frame')}#{id}" in duplicate_seq_id:
-                                id += 1
-                            print(
-                                f">{q.value('id')}_{q.value('frame')}#{id}\n{q.value('aligned_target_sequence').replace('-', '')}",
-                                file=f_out,
-                            )
-                            duplicate_seq_id.append(f"{q.value('id')}_{q.value('frame')}#{id}")
+                            if not self.cb_exclude_duplicate_id.isChecked():
+                                for idx in range(1, q.value("n_seq") + 1):
+                                    print(
+                                        f">{q.value('id')}_{q.value('frame')}_{checksum}_#{idx}\n{q.value('aligned_target_sequence').replace('-', '')}",
+                                        file=f_out,
+                                    )
+                            else:
+                                print(
+                                    f">{q.value('id')}_{q.value('frame')}_{checksum}_{q.value('n_seq')}_sequences\n{q.value('aligned_target_sequence').replace('-', '')}",
+                                    file=f_out,
+                                )
 
-                print(f"Saving sequences in FASTA format in {file_name} done")
+                t2 = time.time()
+                print(f"Sequences saved in FASTA format in {file_name} in {round((t2 - t1)*1000,3)} ms")
                 self.statusBar().showMessage(f"Sequences saved in FASTA format in {file_name}")
 
             # save .sql file with applied query
@@ -390,6 +403,89 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
 
         self.frame.setEnabled(True)
 
+    '''
+    def save_fasta_old(self):
+        """
+        save filtered sequences in FASTA format
+        modify the sequence id in case of duplicates
+        """
+
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save sequences in FASTA format", "")
+        if not file_name:
+            return
+        try:
+            # save sequences
+            with open(file_name, "w") as f_out:
+                if self.sql2:
+                    conditions = f"WHERE {self.sql2}"
+                else:
+                    conditions = ""
+
+                # check for duplicates sequence id
+                duplicate_seq_id: set = set()
+                q = QtSql.QSqlQuery(f"SELECT id, frame FROM sequences {conditions} GROUP BY id, frame HAVING COUNT(id) > 1")
+                if q.exec_():
+                    while q.next():
+                        duplicate_seq_id.add(f"{q.value('id')}_{q.value('frame')}")
+
+                print(f"Saving sequences in FASTA format {conditions} in {file_name}")
+                self.statusBar().showMessage(f"Saving sequences in FASTA format in {file_name}. Please wait...")
+                self.frame.setEnabled(False)
+                t1 = time.time()
+                while time.time() - t1 < 1:
+                    app.processEvents()
+
+                t1 = time.time()
+                q = QtSql.QSqlQuery(f"SELECT id, frame, aligned_target_sequence FROM sequences {conditions} {self.le_order.text()}")
+                if q.exec_():
+                    while q.next():
+                        if f"{q.value('id')}_{q.value('frame')}" not in duplicate_seq_id:
+                            print(
+                                f">{q.value('id')}_{q.value('frame')}\n{q.value('aligned_target_sequence').replace('-', '')}",
+                                file=f_out,
+                            )
+
+                        else:
+                            # duplicate sequence
+                            if self.cb_exclude_duplicate_id.isChecked():
+                                if f"{q.value('id')}_{q.value('frame')}_###" not in duplicate_seq_id:
+                                    print(
+                                        f">{q.value('id')}_{q.value('frame')}_###\n{q.value('aligned_target_sequence').replace('-', '')}",
+                                        file=f_out,
+                                    )
+                                    duplicate_seq_id.add(f"{q.value('id')}_{q.value('frame')}_###")
+
+                            else:
+                                id = 1
+                                while f"{q.value('id')}_{q.value('frame')}_#{id}" in duplicate_seq_id:
+                                    id += 1
+                                print(
+                                    f">{q.value('id')}_{q.value('frame')}_#{id}\n{q.value('aligned_target_sequence').replace('-', '')}",
+                                    file=f_out,
+                                )
+                                duplicate_seq_id.add(f"{q.value('id')}_{q.value('frame')}_#{id}")
+
+                t2 = time.time()
+                print(f"Sequences saved in FASTA format in {file_name} in {round((t2 - t1)*1000,3)} ms")
+                self.statusBar().showMessage(f"Sequences saved in FASTA format in {file_name}")
+
+            # save .sql file with applied query
+            with open(file_name + ".sql", "w") as f_out:
+                f_out.write(
+                    f"--- The file {file_name} was produced by sw_scan applying the following query on the {self.input_file_name} file ---\n"
+                )
+                f_out.write(f"SELECT * FROM sequences {conditions} {self.le_order.text()}\n")
+
+        except Exception:
+            QMessageBox.critical(
+                self,
+                "SW Scan",
+                ("An error occured during the file saving operation."),
+            )
+
+        self.frame.setEnabled(True)
+    '''
+
     def save_tsv(self):
         """
         save sequences in TSV format (same as input)
@@ -405,13 +501,13 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 else:
                     conditions = ""
 
-                print(f"Saving sequences in FASTA format {conditions} in {file_name}")
+                print(f"Saving sequences in TSV format {conditions} in {file_name}")
                 self.statusBar().showMessage(f"Saving TSV file in {file_name}. Please wait")
                 self.frame.setEnabled(False)
                 t1 = time.time()
                 while time.time() - t1 < 1:
                     app.processEvents()
-
+                t1 = time.time()
                 q = QtSql.QSqlQuery(f"SELECT * FROM sequences {conditions} {self.le_order.text()}")
                 if q.exec_():
                     while q.next():
@@ -429,7 +525,10 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                 )
                 f_out.write(f"SELECT * FROM sequences {conditions} {self.le_order.text()}\n")
 
+            t2 = time.time()
+            print(f"Sequences saved in TSV format in {file_name} in {round((t2 - t1) * 1000,3)} ms")
             self.statusBar().showMessage(f"Saving TSV file done ({file_name})")
+
         except Exception:
             QMessageBox.critical(
                 self,
@@ -479,11 +578,11 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             conditions = ""
 
         # check for duplicates sequence id
-        duplicate_seq_id = []
-        q = QtSql.QSqlQuery(f"SELECT id, frame FROM sequences {conditions} GROUP BY id HAVING COUNT(id) > 1")
+        duplicate_seq_id = set()
+        q = QtSql.QSqlQuery(f"SELECT id FROM sequences {conditions} GROUP BY id HAVING COUNT(id) > 1")
         if q.exec_():
             while q.next():
-                duplicate_seq_id.append(f"{q.value('id')}")
+                duplicate_seq_id.add(f"{q.value('id')}")
 
         # get max length of id and description
         """
@@ -552,7 +651,7 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
                             idx += 1
                         id_ = f"{q2.value('id')}#{idx}"
                         print("replaced by", id_, file=sys.stderr)
-                        duplicate_seq_id.append(id_)
+                        duplicate_seq_id.add(id_)
                     else:
                         id_ = q2.value("id")
 
@@ -627,8 +726,8 @@ class SW_Scan(QMainWindow, Ui_MainWindow):
             )
             f_out.write(f"SELECT * FROM sequences {conditions} {self.le_order.text()}\n")
 
-        print(f"Sequences saved in FBS format in {round(time.time() - t1)} s")
-        self.statusBar().showMessage(f"Saving FBS file done in {file_name}")
+        print(f"Sequences saved in FBS format in {round((time.time() - t1)*1000,3)} ms")
+        self.statusBar().showMessage(f"Sequences saved FBS file done in {file_name}")
         self.frame.setEnabled(True)
 
 
