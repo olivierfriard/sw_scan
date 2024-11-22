@@ -65,8 +65,8 @@ FIELDS_NAME = (
     "target_end_optimal",
 )
 
-__version__ = "11"
-__version_date__ = "2024-04-17"
+__version__ = "12"
+__version_date__ = "2024-09-11"
 
 
 SEQ_ORDER = " ORDER BY identity DESC "
