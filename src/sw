@@ -335,7 +335,7 @@ if __name__ == "__main__":
         dest="min_align_len",
         type=float,
         default=MIN_ALIGN_LENGTH_DEFAULT,
-        help=f"Minimal fraction of query length (from 0 to 1) default = {MIN_ALIGN_LENGTH_DEFAULT}",
+        help=f"Minimal percent of query length (from 0 to 100) default = {round(MIN_ALIGN_LENGTH_DEFAULT * 100)}",
     )
     parser.add_argument(
         "--min-identity",
@@ -343,7 +343,7 @@ if __name__ == "__main__":
         dest="min_identity",
         type=float,
         default=MIN_IDENTITY_DEFAULT,
-        help=f"Minimal identity (from 0 to 1) default = {MIN_IDENTITY_DEFAULT}",
+        help=f"Minimal identity (from 0 to 100) default = {round(MIN_IDENTITY_DEFAULT * 100)}",
     )
 
     MIN_ALIGN_LENGTH: float = MIN_ALIGN_LENGTH_DEFAULT
