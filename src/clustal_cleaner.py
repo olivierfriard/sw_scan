@@ -3,7 +3,7 @@
 """
 Multi-Alignment Cleaner
 
-(c) Olivier Friard 2021-2023
+(c) Olivier Friard 2021-2025
 
 Clean multi-alignment (CLUSTAL or MUSCLE output) and position sequences from a FASTA file
 
@@ -16,7 +16,7 @@ Clean multi-alignment (CLUSTAL or MUSCLE output) and position sequences from a F
 """
 
 import sys
-import pathlib as pl
+from pathlib import Path
 import argparse
 import itertools
 from Bio import AlignIO
@@ -24,8 +24,8 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 
 
-__version__ = "10"
-__version_date__ = "2024-05-16"
+__version__ = "11"
+__version_date__ = "2025-09-17"
 
 ROW_HEADER_ID = 10
 
@@ -135,7 +135,7 @@ def parse_arguments():
         print("Input file not specified!", file=sys.stderr)
         sys.exit(1)
 
-    if not pl.Path(args.input).is_file:
+    if not Path(args.input).is_file:
         print("File not found", file=sys.stderr)
         sys.exit(2)
 
@@ -149,7 +149,7 @@ def read_seq_from_clustal(args):
     SeqIO.parse for aligned FASTA files
     """
 
-    if pl.Path(args.input).suffix == ".aln":
+    if Path(args.input).suffix == ".aln":
         align = AlignIO.read(args.input, "clustal")
     else:
         align = SeqIO.parse(args.input, "fasta")
@@ -158,6 +158,7 @@ def read_seq_from_clustal(args):
     ref_id: str = ""
     max_len_id: int = 0
     group: dict = {}
+    group_sequences: dict = {}
     sequences: dict = {}
 
     for seq in align:
@@ -171,10 +172,12 @@ def read_seq_from_clustal(args):
             for seq2 in sequences:
                 if str(seq.seq) == sequences[seq2]:
                     group[seq2] += 1
+                    group_sequences[seq2].add(seq.id)
                     break
             else:
                 sequences[seq.id] = str(seq.seq).upper()
                 group[seq.id] = 1
+                group_sequences[seq.id] = set([seq.id])
                 max_len_id = max(max_len_id, len(seq.id))
 
         else:
@@ -189,8 +192,22 @@ def read_seq_from_clustal(args):
                 sequences[f"group #{count} ({group[seq_id]} seq.)"] = sequences[seq_id]
                 del sequences[seq_id]
                 count += 1
+
+                group_sequences[f"group #{count} ({group[seq_id]} seq.)"] = group_sequences[seq_id]
+                del group_sequences[seq_id]
+
+            else:
+                del group_sequences[seq_id]
+
         # update max_len_id
         max_len_id = max([len(id) for id in sequences])
+
+        with open(Path(args.input).parent / Path(args.input).with_suffix(".groups.txt"), "w") as f_out:
+            for k in group_sequences:
+                f_out.write(k + "\n")
+                f_out.write("======================\n")
+                f_out.write("\n".join(sorted(group_sequences[k])))
+                f_out.write("\n\n")
 
     error_msg = ""
 
@@ -201,11 +218,15 @@ def read_seq_from_clustal(args):
     if len(set([len(sequences[k]) for k in sequences])) != 1:
         error_msg = "error reading the multi-alignment output. Different sequence lengths were found"
 
+    # print(group["ENA|MT611073|MT611073.1"])
+    # print(group_sequences["ENA|MT611073|MT611073.1"])
+    # print(group_sequences.keys())
+
     return error_msg, sequences, ref_seq, ref_id, max_len_id
 
 
 def align_sub_sequences(args, sequences):
-    if not pl.Path(args.sequence_file).is_file():
+    if not Path(args.sequence_file).is_file():
         print(f"Sequence file not found: {args.sequence_file}\n", file=sys.stderr)
         sys.exit(2)
 
@@ -329,6 +350,7 @@ def display_sub_sequences(sequences, seq2position, seq_idx, polarity, max_len_id
     return o
 
 
+# region clean_sequences
 def clean_sequences(
     args,
     seq_idx,
@@ -339,9 +361,8 @@ def clean_sequences(
     stars,
     max_len_id,
     polarity,
-):
-    o = ""
-
+) -> str:
+    o: str = ""
     for id in sequences:
         seq = sequences[id]
 
@@ -417,8 +438,11 @@ def clean_sequences(
     return o
 
 
+# endregion
+
+
 def make_consensus(args, consensus, max_len_id: int) -> str:
-    o = ""
+    o: str = ""
     row_header = f"{args.consensus}%"
 
     o += row_header
@@ -504,6 +528,10 @@ def display(HTML_HEADER, CONSENSUS, PRIMERS_PROBES, REF_SEQ, SEQUENCES, STARS, H
 
 def main():
     args = parse_arguments()
+
+    if not Path(args.input).is_file():
+        print(f"Input file not found: {args.input}\n", file=sys.stderr)
+        sys.exit(2)
 
     error_msg, sequences, ref_seq, ref_id, max_len_id = read_seq_from_clustal(args)
 
