@@ -13,4 +13,3 @@ for record in SeqIO.parse(handle, "fasta"):
     print(f"{record.seq}")
 
 handle.close()
-

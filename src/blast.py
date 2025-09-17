@@ -30,24 +30,59 @@ __version__ = "4"
 __version_date__ = "2022-05-19"
 
 parser = argparse.ArgumentParser(
-    prog="BLAST wrapper", description="BLAST", usage=("blast.py -q QUERY_PATH -t TARGET_PATH -c N_CORES -o OUTPUT_PATH")
+    prog="BLAST wrapper",
+    description="BLAST",
+    usage=("blast.py -q QUERY_PATH -t TARGET_PATH -c N_CORES -o OUTPUT_PATH"),
 )
 parser.add_argument(
-    "-q", "--query", action="store", dest="query", type=str, help="Path of the query file (FASTA format)"
+    "-q",
+    "--query",
+    action="store",
+    dest="query",
+    type=str,
+    help="Path of the query file (FASTA format)",
 )
-parser.add_argument("-t", "--target", action="store", dest="target", type=str, help="division")
-
-parser.add_argument("-w", "--ws", action="store", dest="ws", default=WS_DEFAULT, type=int, help="word size")
+parser.add_argument(
+    "-t", "--target", action="store", dest="target", type=str, help="division"
+)
 
 parser.add_argument(
-    "-c", "--cpu", action="store", dest="cpu", default=8, type=int, help="Set number of CPU/cores to use (default 8)"
+    "-w",
+    "--ws",
+    action="store",
+    dest="ws",
+    default=WS_DEFAULT,
+    type=int,
+    help="word size",
 )
 
-parser.add_argument("-o", "--output", action="store", dest="output", type=str, help="Set path for the output file")
+parser.add_argument(
+    "-c",
+    "--cpu",
+    action="store",
+    dest="cpu",
+    default=8,
+    type=int,
+    help="Set number of CPU/cores to use (default 8)",
+)
+
+parser.add_argument(
+    "-o",
+    "--output",
+    action="store",
+    dest="output",
+    type=str,
+    help="Set path for the output file",
+)
 
 
 parser.add_argument(
-    "--temp", action="store", dest="temp", default=TMP_DIR, type=str, help="Set path for the temporary directory"
+    "--temp",
+    action="store",
+    dest="temp",
+    default=TMP_DIR,
+    type=str,
+    help="Set path for the temporary directory",
 )
 
 parser.add_argument(
@@ -148,7 +183,9 @@ subprocess.run(command)
 
 subprocess.run(["sqlite3", args.output, "CREATE INDEX id_idx on sequences(id)"])
 
-subprocess.run(["sqlite3", args.output, ".mode tabs", f".import {tmp_output_name} sequences"])
+subprocess.run(
+    ["sqlite3", args.output, ".mode tabs", f".import {tmp_output_name} sequences"]
+)
 
 
 if pl.Path(f"{tmp_output_name}").is_file():

@@ -72,7 +72,10 @@ IUPAC_degenerated = {
 HTML_HEADER = "<html><head></head><body><pre>"
 HTML_FOOTER = "</pre></body></html>"
 
-SPAN_OPEN = {"": '<span style="background-color: yellow">', " (rev-comp)": '<span style="background-color: lime">'}
+SPAN_OPEN = {
+    "": '<span style="background-color: yellow">',
+    " (rev-comp)": '<span style="background-color: lime">',
+}
 SPAN_CLOSE = "</span>"
 
 YELLOW = '<span style="background-color: yellow">'
@@ -84,8 +87,18 @@ def parse_arguments():
         description="Multi-Alignment Cleaner",
     )
 
-    parser.add_argument("-v", action="store_true", dest="version", help="Print version of Multi-Alignment Cleaner")
-    parser.add_argument("-i", action="store", dest="input", help="Multi-alignment file (.aln for CLUSTAL)")
+    parser.add_argument(
+        "-v",
+        action="store_true",
+        dest="version",
+        help="Print version of Multi-Alignment Cleaner",
+    )
+    parser.add_argument(
+        "-i",
+        action="store",
+        dest="input",
+        help="Multi-alignment file (.aln for CLUSTAL)",
+    )
     parser.add_argument("-m", action="store", dest="model", help="Reference sequence")
     parser.add_argument(
         "-s",
@@ -93,9 +106,21 @@ def parse_arguments():
         dest="sequence_file",
         help="FASTA file containing the sequences to position on the alignment",
     )
-    parser.add_argument("-g", action="store_true", dest="group", help="Group sequences when identical")
-    parser.add_argument("--stars", action="store_true", dest="stars", help="Print stars when nucleotides are identical on column")
-    parser.add_argument("--consensus", action="store", dest="consensus", help="Print a consensus sequence (in percent)")
+    parser.add_argument(
+        "-g", action="store_true", dest="group", help="Group sequences when identical"
+    )
+    parser.add_argument(
+        "--stars",
+        action="store_true",
+        dest="stars",
+        help="Print stars when nucleotides are identical on column",
+    )
+    parser.add_argument(
+        "--consensus",
+        action="store",
+        dest="consensus",
+        help="Print a consensus sequence (in percent)",
+    )
 
     args = parser.parse_args()
 
@@ -194,7 +219,11 @@ def align_sub_sequences(args, sequences):
         for record in SeqIO.parse(handle, "fasta"):
             seq_id = record.description
             seq2position[seq_id] = str(record.seq)
-            print(f"Sequence to position {seq_id} {seq2position[seq_id]} ->  ", end="", file=sys.stderr)
+            print(
+                f"Sequence to position {seq_id} {seq2position[seq_id]} ->  ",
+                end="",
+                file=sys.stderr,
+            )
             # search sequence
             for id in sequences:
                 if seq2position[seq_id] in sequences[id]:
@@ -205,8 +234,14 @@ def align_sub_sequences(args, sequences):
             else:
                 # search rev-comp
                 print("NOT FOUND", file=sys.stderr)
-                seq2position[seq_id] = str(Seq(seq2position[seq_id]).reverse_complement())
-                print(f"rev-comp sequence to position {seq_id} {seq2position[seq_id]} ->  ", end="", file=sys.stderr)
+                seq2position[seq_id] = str(
+                    Seq(seq2position[seq_id]).reverse_complement()
+                )
+                print(
+                    f"rev-comp sequence to position {seq_id} {seq2position[seq_id]} ->  ",
+                    end="",
+                    file=sys.stderr,
+                )
                 for id in sequences:
                     if seq2position[seq_id] in sequences[id]:
                         seq_idx[seq_id] = sequences[id].index(seq2position[seq_id])
@@ -251,7 +286,9 @@ def reference_seq(args, ref_seq, ref_id, max_len_id, seq2position, seq_idx, pola
             else:
                 color = YELLOW
 
-            ref_seq_out = ref_seq_out.replace(seq2position[seq_id], color + seq2position[seq_id] + SPAN_CLOSE)
+            ref_seq_out = ref_seq_out.replace(
+                seq2position[seq_id], color + seq2position[seq_id] + SPAN_CLOSE
+            )
             # ref_seq_out = ref_seq_out.replace(seq2position[seq_id], SPAN_OPEN[polarity[seq_id]] + seq2position[seq_id] + SPAN_CLOSE)
 
     o += ref_seq_out
@@ -269,7 +306,10 @@ def display_sub_sequences(sequences, seq2position, seq_idx, polarity, max_len_id
     pre_header = " " * [len(sequences[k]) for k in sequences][0]
     for seq_id in seq_idx:
         pre_header = (
-            pre_header[0 : seq_idx[seq_id]] + seq_id + polarity[seq_id] + header[seq_idx[seq_id] + len(seq_id + polarity[seq_id]) :]
+            pre_header[0 : seq_idx[seq_id]]
+            + seq_id
+            + polarity[seq_id]
+            + header[seq_idx[seq_id] + len(seq_id + polarity[seq_id]) :]
         )
     # print(" " * (max_len_id + ROW_HEADER_ID), end="")
     o += " " * (max_len_id + ROW_HEADER_ID)
@@ -279,7 +319,11 @@ def display_sub_sequences(sequences, seq2position, seq_idx, polarity, max_len_id
 
     # position
     for seq_id in seq_idx:
-        header_out = header_out[0 : seq_idx[seq_id]] + seq2position[seq_id] + header[seq_idx[seq_id] + len(seq2position[seq_id]) :]
+        header_out = (
+            header_out[0 : seq_idx[seq_id]]
+            + seq2position[seq_id]
+            + header[seq_idx[seq_id] + len(seq2position[seq_id]) :]
+        )
 
     # colorize
     for idx, seq_id in enumerate(seq_idx):
@@ -290,7 +334,9 @@ def display_sub_sequences(sequences, seq2position, seq_idx, polarity, max_len_id
         else:
             color = YELLOW
 
-        header_out = header_out.replace(seq2position[seq_id], color + seq2position[seq_id] + SPAN_CLOSE)
+        header_out = header_out.replace(
+            seq2position[seq_id], color + seq2position[seq_id] + SPAN_CLOSE
+        )
         # header_out = header_out.replace(seq2position[seq_id], SPAN_OPEN[polarity[seq_id]] + seq2position[seq_id] + SPAN_CLOSE)
 
     o += "\n" + (" " * (max_len_id + ROW_HEADER_ID)) + header_out
@@ -298,7 +344,17 @@ def display_sub_sequences(sequences, seq2position, seq_idx, polarity, max_len_id
     return o
 
 
-def clean_sequences(args, seq_idx, sequences, seq2position, ref_seq, consensus, stars, max_len_id, polarity):
+def clean_sequences(
+    args,
+    seq_idx,
+    sequences,
+    seq2position,
+    ref_seq,
+    consensus,
+    stars,
+    max_len_id,
+    polarity,
+):
     o = ""
 
     for id in sequences:
@@ -329,9 +385,13 @@ def clean_sequences(args, seq_idx, sequences, seq2position, ref_seq, consensus, 
             target = {}
             for seq_id in seq_idx:
                 target[seq_id] = ""
-                for idx, nt in enumerate(seq[seq_idx[seq_id] : seq_idx[seq_id] + len(seq2position[seq_id])]):
+                for idx, nt in enumerate(
+                    seq[seq_idx[seq_id] : seq_idx[seq_id] + len(seq2position[seq_id])]
+                ):
                     # if nt == seq2position[seq_id][idx]:
-                    if (nt != "-") and (nt in IUPAC_degenerated[seq2position[seq_id][idx]]):
+                    if (nt != "-") and (
+                        nt in IUPAC_degenerated[seq2position[seq_id][idx]]
+                    ):
                         target[seq_id] += "."
                     else:
                         target[seq_id] += nt
@@ -347,7 +407,9 @@ def clean_sequences(args, seq_idx, sequences, seq2position, ref_seq, consensus, 
             count = 0
             for seq_id in seq_idx:
                 output = (
-                    output[0 : seq_idx[seq_id]] + (str(count) * len(target[seq_id])) + output[seq_idx[seq_id] + len(seq2position[seq_id]) :]
+                    output[0 : seq_idx[seq_id]]
+                    + (str(count) * len(target[seq_id]))
+                    + output[seq_idx[seq_id] + len(seq2position[seq_id]) :]
                 )
                 count += 1
                 if count == 10:
@@ -363,7 +425,10 @@ def clean_sequences(args, seq_idx, sequences, seq2position, ref_seq, consensus, 
                 else:
                     color = YELLOW
 
-                output = output.replace(str(count) * len(target[seq_id]), color + target[seq_id] + SPAN_CLOSE)
+                output = output.replace(
+                    str(count) * len(target[seq_id]),
+                    color + target[seq_id] + SPAN_CLOSE,
+                )
                 # output = output.replace(str(count) * len(target[seq_id]), SPAN_OPEN[polarity[seq_id]] + target[seq_id] + SPAN_CLOSE)
                 count += 1
 
@@ -407,7 +472,10 @@ def make_consensus(args, consensus, max_len_id: int) -> str:
                 for c in itertools.combinations(nt_list, n):
                     print(f"{c=}", file=sys.stderr)
 
-                    if sum([consensus[idx][k] for k in c]) / total >= int(args.consensus) / 100:
+                    if (
+                        sum([consensus[idx][k] for k in c]) / total
+                        >= int(args.consensus) / 100
+                    ):
                         if "-" in c:
                             c_list = list(c)
                             c_list.remove("-")
@@ -440,10 +508,14 @@ def display_stars(args, stars, max_len_id: int) -> str:
     return o
 
 
-def display(HTML_HEADER, CONSENSUS, PRIMERS_PROBES, REF_SEQ, SEQUENCES, STARS, HTML_FOOTER):
+def display(
+    HTML_HEADER, CONSENSUS, PRIMERS_PROBES, REF_SEQ, SEQUENCES, STARS, HTML_FOOTER
+):
     print(HTML_HEADER)
 
-    print(f"Multi-Alignment Cleaner v. {__version__} ({__version_date__}) by Olivier Friard<br><br>")
+    print(
+        f"Multi-Alignment Cleaner v. {__version__} ({__version_date__}) by Olivier Friard<br><br>"
+    )
 
     print(CONSENSUS)
 
@@ -470,14 +542,28 @@ def main():
     # sequences to position
     if args.sequence_file:
         seq2position, seq_idx, polarity = align_sub_sequences(args, sequences)
-        PRIMERS_PROBES = display_sub_sequences(sequences, seq2position, seq_idx, polarity, max_len_id)
+        PRIMERS_PROBES = display_sub_sequences(
+            sequences, seq2position, seq_idx, polarity, max_len_id
+        )
     else:
         seq2position, seq_idx, polarity = None, None, None
         PRIMERS_PROBES = ""
 
-    REF_SEQ, consensus, stars = reference_seq(args, ref_seq, ref_id, max_len_id, seq2position, seq_idx, polarity)
+    REF_SEQ, consensus, stars = reference_seq(
+        args, ref_seq, ref_id, max_len_id, seq2position, seq_idx, polarity
+    )
 
-    SEQUENCES = clean_sequences(args, seq_idx, sequences, seq2position, ref_seq, consensus, stars, max_len_id, polarity)
+    SEQUENCES = clean_sequences(
+        args,
+        seq_idx,
+        sequences,
+        seq2position,
+        ref_seq,
+        consensus,
+        stars,
+        max_len_id,
+        polarity,
+    )
 
     if args.stars:
         STARS = display_stars(args, stars, max_len_id)
@@ -489,7 +575,9 @@ def main():
     else:
         CONSENSUS = ""
 
-    display(HTML_HEADER, CONSENSUS, PRIMERS_PROBES, REF_SEQ, SEQUENCES, STARS, HTML_FOOTER)
+    display(
+        HTML_HEADER, CONSENSUS, PRIMERS_PROBES, REF_SEQ, SEQUENCES, STARS, HTML_FOOTER
+    )
 
 
 if __name__ == "__main__":

@@ -31,8 +31,8 @@ sequence_length: 29862
 
 """
 
-__version__ = '1'
-__author__ = 'Olivier Friard'
+__version__ = "1"
+__author__ = "Olivier Friard"
 
 
 import sys
@@ -47,7 +47,6 @@ header_ok = False
 
 with open(sys.argv[1], "r") as f_in, open(sys.argv[2], "w") as f_out:
     for line in f_in:
-
         line_from_json = json.loads(line)
 
         # print header on the first row
@@ -58,10 +57,12 @@ with open(sys.argv[1], "r") as f_in, open(sys.argv[2], "w") as f_out:
             print()
 
         for k in list(line_from_json.keys()):
-
             # one-row fasta file
-            if k == 'sequence':
-                print(f">{line_from_json['covv_accession_id']}|{line_from_json['covv_virus_name'].replace(' ', '-')}|{line_from_json['covv_collection_date']}|{line_from_json['covv_lineage']}|", file=f_out)
+            if k == "sequence":
+                print(
+                    f">{line_from_json['covv_accession_id']}|{line_from_json['covv_virus_name'].replace(' ', '-')}|{line_from_json['covv_collection_date']}|{line_from_json['covv_lineage']}|",
+                    file=f_out,
+                )
                 print(line_from_json[k].replace("\n", ""), file=f_out)
                 continue
 
@@ -70,5 +71,3 @@ with open(sys.argv[1], "r") as f_in, open(sys.argv[2], "w") as f_out:
             print(f"{line_from_json[k]}", end="\t")
 
         print()
-
-

@@ -34,7 +34,9 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.lb_results_file)
         self.gridLayout = QtWidgets.QGridLayout()
         self.gridLayout.setObjectName("gridLayout")
-        spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacerItem = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding
+        )
         self.gridLayout.addItem(spacerItem, 8, 0, 1, 1)
         self.label_5 = QtWidgets.QLabel(self.frame)
         self.label_5.setObjectName("label_5")
@@ -100,7 +102,9 @@ class Ui_MainWindow(object):
         self.pte_sql = QtWidgets.QPlainTextEdit(self.frame)
         self.pte_sql.setObjectName("pte_sql")
         self.gridLayout.addWidget(self.pte_sql, 9, 0, 1, 3)
-        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacerItem1 = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding
+        )
         self.gridLayout.addItem(spacerItem1, 7, 1, 1, 1)
         self.label_3 = QtWidgets.QLabel(self.frame)
         self.label_3.setObjectName("label_3")
@@ -157,17 +161,26 @@ class Ui_MainWindow(object):
         self.pb_save_fasta.setText(_translate("MainWindow", "Save in FASTA format"))
         self.pb_filter.setText(_translate("MainWindow", "Filter"))
         self.pb_clear.setText(_translate("MainWindow", "Clear"))
-        self.cb_include_all_seq.setText(_translate("MainWindow", "Include all sequences"))
+        self.cb_include_all_seq.setText(
+            _translate("MainWindow", "Include all sequences")
+        )
         self.pb_run_query.setText(_translate("MainWindow", "Run query"))
         self.label_4.setText(_translate("MainWindow", "Alignment length"))
         self.label.setText(_translate("MainWindow", "ID contains"))
         self.label_2.setText(_translate("MainWindow", "Description contains"))
-        self.pb_save_fbs.setText(_translate("MainWindow", "Save \"FBS\""))
+        self.pb_save_fbs.setText(_translate("MainWindow", 'Save "FBS"'))
         self.pb_save_tsv.setText(_translate("MainWindow", "Save TSV"))
         self.label_6.setText(_translate("MainWindow", "Order"))
         self.label_3.setText(_translate("MainWindow", "identity"))
-        self.label_7.setText(_translate("MainWindow", "<html><head/><body><p>Use <span style=\" font-weight:600;\">,</span> to link terms with AND <br/>Use <span style=\" font-weight:600;\">|</span> to link terms with OR</p></body></html>"))
-        self.cb_exclude_duplicate_id.setText(_translate("MainWindow", "Exclude duplicate id from FASTA output"))
+        self.label_7.setText(
+            _translate(
+                "MainWindow",
+                '<html><head/><body><p>Use <span style=" font-weight:600;">,</span> to link terms with AND <br/>Use <span style=" font-weight:600;">|</span> to link terms with OR</p></body></html>',
+            )
+        )
+        self.cb_exclude_duplicate_id.setText(
+            _translate("MainWindow", "Exclude duplicate id from FASTA output")
+        )
         self.lb_copyright.setText(_translate("MainWindow", "copyright"))
         self.menuQuit.setTitle(_translate("MainWindow", "SW Scan"))
         self.menuHelp.setTitle(_translate("MainWindow", "Help"))
