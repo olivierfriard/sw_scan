@@ -202,6 +202,7 @@ def read_seq_from_clustal(args):
         # update max_len_id
         max_len_id = max([len(id) for id in sequences])
 
+        # create a file with the sequence id's of each group
         with open(Path(args.input).parent / Path(args.input).with_suffix(".groups.txt"), "w") as f_out:
             for k in group_sequences:
                 f_out.write(k + "\n")
