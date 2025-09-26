@@ -24,8 +24,8 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 
 
-__version__ = "12"
-__version_date__ = "2025-09-19"
+__version__ = "13"
+__version_date__ = "2025-09-26"
 
 ROW_HEADER_ID = 10
 
@@ -244,13 +244,15 @@ def read_seq_from_clustal(args):
     return error_msg, sequences, ref_seq, ref_id, max_len_id
 
 
-def align_sub_sequences(args, sequences):
+def align_sub_sequences(args, sequences, ref_seq):
     if not Path(args.sequence_file).is_file():
         print(f"Sequence file not found: {args.sequence_file}\n", file=sys.stderr)
         sys.exit(2)
 
     with open(args.sequence_file, "r") as handle:
         seq2position: dict = {}
+        seq2position_revcomp: dict = {}
+
         seq_idx: dict = {}
         polarity: dict = {}
 
@@ -262,7 +264,25 @@ def align_sub_sequences(args, sequences):
                 end="",
                 file=sys.stderr,
             )
-            # search sequence
+
+            # search sequence in reference sequence
+            if seq2position[seq_id] in ref_seq:
+                seq_idx[seq_id] = ref_seq.index(seq2position[seq_id])
+                polarity[seq_id] = ""
+                print("FOUND in reference sequence", file=sys.stderr)
+            else:
+                # search in reference sequence rev-comp
+                seq2position_revcomp[seq_id] = str(
+                    Seq(seq2position[seq_id]).reverse_complement()
+                )
+                if seq2position_revcomp[seq_id] in ref_seq:
+                    seq_idx[seq_id] = ref_seq.index(seq2position_revcomp[seq_id])
+                    polarity[seq_id] = " (rev-comp)"
+                    print("FOUND", file=sys.stderr)
+            if seq_id in polarity:
+                continue
+
+            # search in other sequences
             for id in sequences:
                 if seq2position[seq_id] in sequences[id]:
                     seq_idx[seq_id] = sequences[id].index(seq2position[seq_id])
@@ -586,7 +606,7 @@ def main():
 
     # sequences to position
     if args.sequence_file:
-        seq2position, seq_idx, polarity = align_sub_sequences(args, sequences)
+        seq2position, seq_idx, polarity = align_sub_sequences(args, sequences, ref_seq)
         PRIMERS_PROBES = display_sub_sequences(
             sequences, seq2position, seq_idx, polarity, max_len_id
         )
