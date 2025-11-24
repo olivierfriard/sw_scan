@@ -1,5 +1,5 @@
 [project]
-name = "egtools"
+name = "sw_scan"
 version = "0.1.0"
 description = "Add your description here"
 authors = [
@@ -7,22 +7,9 @@ authors = [
 ]
 dependencies = [
     "pandas>=2.2.1",
-    "scikit-bio>=0.5.9",
+    "scikit-bio==0.6.0",
     "biopython>=1.83",
 ]
 readme = "README.md"
-requires-python = ">= 3.12"
+requires-python = ">=3.11,<3.12"
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.rye]
-managed = true
-dev-dependencies = []
-
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/egtools"]
