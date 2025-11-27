@@ -93,10 +93,12 @@ def align(input):  # target_seq, target_id, target_description):
 
     if not found_100:
         # ssw_alignment = query(target_seq)
-        ssw_alignment = pair_align_nucl(query_sequence, target_seq)
-        assert len(ssw_alignment.aligned_query_sequence) == len(
-            ssw_alignment.aligned_target_sequence
+        ssw_alignment = pair_align(
+            query_sequence,
+            target_seq,
+            mode="local",
         )
+        # assert len(ssw_alignment.aligned_query_sequence) == len(ssw_alignment.aligned_target_sequence)
 
         # identity
         matches = 0
