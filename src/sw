@@ -17,7 +17,7 @@ from multiprocessing import Pool, cpu_count
 
 from Bio import SeqIO
 from Bio.Seq import Seq
-from skbio.alignment import pair_align_nucl  # StripedSmithWaterman
+from skbio.alignment import pair_align  # StripedSmithWaterman
 
 MIN_ALIGN_LENGTH_DEFAULT = 0.5
 MIN_IDENTITY_DEFAULT = 0.5
@@ -102,25 +102,35 @@ def align(input):  # target_seq, target_id, target_description):
 
         # identity
         matches = 0
-        for i, j in zip(
-            ssw_alignment.aligned_query_sequence, ssw_alignment.aligned_target_sequence
-        ):
+        aligned_query_sequence, aligned_target_sequence = ssw_alignment.paths[
+            0
+        ].to_aligned((query_sequence, target_seq))
+        for i, j in zip(aligned_query_sequence, aligned_target_sequence):
             if i == j:
                 matches += 1
-        identity = 100 * matches / len(ssw_alignment.aligned_query_sequence)
+        # identity = 100 * matches / len(ssw_alignment.aligned_query_sequence)
+        identity = 100 * matches / len(aligned_query_sequence)
 
         alignment_f = {
             "frame": frame,
-            "score": ssw_alignment["optimal_alignment_score"],
+            "score": ssw_alignment.score,  # ssw_alignment["optimal_alignment_score"],
             "identity": round(identity, 2),
-            "align_length": len(ssw_alignment.aligned_target_sequence),
+            "align_length": len(aligned_target_sequence),
             "target_length": len(target_seq),
-            "aligned_query_sequence": ssw_alignment.aligned_query_sequence,
-            "aligned_target_sequence": ssw_alignment.aligned_target_sequence,
-            "query_begin": ssw_alignment.query_begin,
-            "query_end": ssw_alignment.query_end,
-            "target_begin": ssw_alignment.target_begin,
-            "target_end_optimal": ssw_alignment.target_end_optimal,
+            "aligned_query_sequence": aligned_query_sequence,
+            "aligned_target_sequence": aligned_target_sequence,
+            "query_begin": int(
+                ssw_alignment.paths[0].ranges[0][0]
+            ),  # ssw_alignment.query_begin,
+            "query_end": int(
+                ssw_alignment.paths[0].ranges[0][1]
+            ),  # ssw_alignment.query_end,
+            "target_begin": int(
+                ssw_alignment.paths[0].ranges[1][0]
+            ),  # ssw_alignment.target_begin,
+            "target_end_optimal": int(
+                ssw_alignment.paths[0].ranges[1][1]
+            ),  # ssw_alignment.target_end_optimal,
         }
         if MIN_IDENTITY or MIN_ALIGN_LENGTH:
             if (
@@ -158,35 +168,51 @@ def align(input):  # target_seq, target_id, target_description):
         result.append(output(target_id, target_description, alignment_r))
 
     if not found_100:
-        ssw_alignment_revcomp = query_revcomp(target_seq)
+        # ssw_alignment_revcomp = query_revcomp(target_seq)
+        ssw_alignment_revcomp = pair_align(
+            query_sequence_revcomp,
+            target_seq,
+            mode="local",
+        )
         # identity
         matches = 0
+        aligned_query_sequence, aligned_target_sequence = ssw_alignment_revcomp.paths[
+            0
+        ].to_aligned((query_sequence, target_seq))
         for i, j in zip(
-            ssw_alignment_revcomp.aligned_query_sequence,
-            ssw_alignment_revcomp.aligned_target_sequence,
+            aligned_query_sequence,
+            aligned_target_sequence,
         ):
             if i == j:
                 matches += 1
-        identity = 100 * matches / len(ssw_alignment_revcomp.aligned_query_sequence)
+        identity = 100 * matches / len(aligned_query_sequence)
 
         alignment_r = {
             "frame": frame,
-            "score": ssw_alignment_revcomp["optimal_alignment_score"],
+            "score": ssw_alignment_revcomp.score,
             "identity": round(identity, 2),
-            "align_length": len(ssw_alignment_revcomp.aligned_target_sequence),
+            "align_length": len(aligned_target_sequence),
             "target_length": len(target_seq),
             # "aligned_query_sequence": ssw_alignment_revcomp.aligned_query_sequence,
             "aligned_query_sequence": str(
-                Seq(ssw_alignment_revcomp.aligned_query_sequence).reverse_complement()
+                Seq(aligned_query_sequence).reverse_complement()
             ),
             # "aligned_target_sequence": ssw_alignment_revcomp.aligned_target_sequence,
             "aligned_target_sequence": str(
-                Seq(ssw_alignment_revcomp.aligned_target_sequence).reverse_complement()
+                Seq(aligned_target_sequence).reverse_complement()
             ),
-            "query_begin": ssw_alignment_revcomp.query_begin,
-            "query_end": ssw_alignment_revcomp.query_end,
-            "target_begin": ssw_alignment_revcomp.target_begin,
-            "target_end_optimal": ssw_alignment_revcomp.target_end_optimal,
+            "query_begin": int(
+                ssw_alignment_revcomp.paths[0].ranges[0][0]
+            ),  # ssw_alignment.query_begin,
+            "query_end": int(
+                ssw_alignment_revcomp.paths[0].ranges[0][1]
+            ),  # ssw_alignment.query_end,
+            "target_begin": int(
+                ssw_alignment_revcomp.paths[0].ranges[1][0]
+            ),  # ssw_alignment.target_begin,
+            "target_end_optimal": int(
+                ssw_alignment_revcomp.paths[0].ranges[1][1]
+            ),  # ssw_alignment.target_end_optimal,
         }
 
         if MIN_IDENTITY or MIN_ALIGN_LENGTH:
