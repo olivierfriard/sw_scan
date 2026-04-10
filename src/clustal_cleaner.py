@@ -24,8 +24,8 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 
 
-__version__ = "13"
-__version_date__ = "2025-09-26"
+__version__ = "14"
+__version_date__ = "2026-04-10"
 
 ROW_HEADER_ID = 10
 
@@ -515,7 +515,7 @@ def make_consensus(args, consensus, max_len_id: int) -> str:
         total = sum([consensus[idx][k] for k in consensus[idx]])
 
         for nt in consensus[idx]:
-            if consensus[idx][nt] / total >= int(args.consensus) / 100:
+            if consensus[idx][nt] / total >= float(args.consensus) / 100:
                 o += nt
                 break
         else:
@@ -535,7 +535,7 @@ def make_consensus(args, consensus, max_len_id: int) -> str:
 
                     if (
                         sum([consensus[idx][k] for k in c]) / total
-                        >= int(args.consensus) / 100
+                        >= float(args.consensus) / 100
                     ):
                         if "-" in c:
                             c_list = list(c)
