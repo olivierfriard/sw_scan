@@ -317,9 +317,9 @@ def reference_seq(args, ref_seq, ref_id, max_len_id, seq2position, seq_idx, pola
     o = ref_id + (" " * (max_len_id - len(ref_id) + ROW_HEADER_ID))
 
     stars = list(ref_seq)
+    consensus: dict = {}
     if args.consensus:
         # initialize consensus with reference sequence
-        consensus = {}
         for idx, nt in enumerate(ref_seq):
             if idx not in consensus:
                 consensus[idx] = {}
@@ -330,9 +330,6 @@ def reference_seq(args, ref_seq, ref_id, max_len_id, seq2position, seq_idx, pola
                     consensus[idx][nt2] = 1 / len(IUPAC_degenerated[nt])
                 else:
                     consensus[idx][nt2] += 1 / len(IUPAC_degenerated[nt])
-
-    else:
-        consensus = {}
 
     ref_seq_out = ref_seq
     if args.sequence_file:
@@ -499,9 +496,12 @@ def clean_sequences(
 # endregion
 
 
-def make_consensus(args, consensus, max_len_id: int) -> str:
+def make_consensus(consensus_value: float, consensus: dict, max_len_id: int) -> str:
+    """
+    create a consensus sequence
+    """
     o: str = ""
-    row_header = f"{args.consensus}%"
+    row_header = f"{consensus_value}%"
 
     o += row_header
 
@@ -515,15 +515,12 @@ def make_consensus(args, consensus, max_len_id: int) -> str:
         total = sum([consensus[idx][k] for k in consensus[idx]])
 
         for nt in consensus[idx]:
-            if consensus[idx][nt] / total >= float(args.consensus) / 100:
+            if consensus[idx][nt] / total >= consensus_value / 100:
                 o += nt
                 break
         else:
             nt_list = list(consensus[idx])
             print(f"{nt_list=}", file=sys.stderr)
-
-            # remove gap '-'
-            # nt_list.remove('-')
 
             flag_stop = False
             # test
@@ -535,7 +532,7 @@ def make_consensus(args, consensus, max_len_id: int) -> str:
 
                     if (
                         sum([consensus[idx][k] for k in c]) / total
-                        >= float(args.consensus) / 100
+                        >= consensus_value / 100
                     ):
                         if "-" in c:
                             c_list = list(c)
@@ -635,10 +632,16 @@ def main():
     else:
         STARS = ""
 
+    CONSENSUS: str = ""
     if args.consensus:
-        CONSENSUS = make_consensus(args, consensus, max_len_id)
-    else:
-        CONSENSUS = ""
+        if "," in args.consensus:
+            for consensus_value in [float(x) for x in args.consensus.split(",")]:
+                print(f"{consensus_value=}", file=sys.stderr)
+                if CONSENSUS:
+                    CONSENSUS += "<br>"
+                CONSENSUS += make_consensus(consensus_value, consensus, max_len_id)
+        else:
+            CONSENSUS = make_consensus(float(args.consensus), consensus, max_len_id)
 
     display(
         HTML_HEADER, CONSENSUS, PRIMERS_PROBES, REF_SEQ, SEQUENCES, STARS, HTML_FOOTER
