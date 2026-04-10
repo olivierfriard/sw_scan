@@ -3,7 +3,7 @@
 """
 Multi-Alignment Cleaner
 
-(c) Olivier Friard 2021-2025
+(c) Olivier Friard 2021-2026
 
 Clean multi-alignment (CLUSTAL or MUSCLE output) and position sequences from a FASTA file
 
@@ -13,16 +13,23 @@ Clean multi-alignment (CLUSTAL or MUSCLE output) and position sequences from a F
 -s primers.seq   position and highlight primer/probe sequences
 
 
+
+v. 14
+-------
+
+* added possibility to pass a decimal consensus value as argument
+
+* added possibility to require many consensus percent values
+
 """
 
-import sys
-from pathlib import Path
 import argparse
 import itertools
-from Bio import AlignIO
-from Bio.Seq import Seq
-from Bio import SeqIO
+import sys
+from pathlib import Path
 
+from Bio import AlignIO, SeqIO
+from Bio.Seq import Seq
 
 __version__ = "14"
 __version_date__ = "2026-04-10"
