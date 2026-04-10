@@ -125,7 +125,7 @@ def parse_arguments():
     args = parser.parse_args()
 
     if args.version:
-        print("Multi-Alignment Cleaner\n(c) Olivier Friard 2021-2025")
+        print("Multi-Alignment Cleaner\n(c) Olivier Friard 2021-2026")
         print(f"v. {__version__} ({__version_date__})\n")
         sys.exit()
 
