@@ -9,6 +9,7 @@ dependencies = [
     "pandas>=2.2.1,<3",
     "scikit-bio==0.6.0",
     "biopython>=1.83",
+    "pyqt5>=5.15.11",
 ]
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
